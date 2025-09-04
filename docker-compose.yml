@@ -1,0 +1,71 @@
+﻿services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: config.env
+    environment:
+      PYTHONUNBUFFERED: "1"
+      # Build the URL from env vars (quoted is safer due to colons)
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+    depends_on:
+      - db
+    restart: unless-stopped
+    networks: [web]
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/dockerfile
+      args:
+        VITE_API_URL: "https://astrooverz.com/api"
+    restart: unless-stopped
+    networks: [web]
+
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on: [backend, frontend]
+    restart: unless-stopped
+    networks: [web]
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-astrooverz}
+      POSTGRES_USER: ${POSTGRES_USER:-astrooverz}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-astrooverz123}
+    volumes:
+      - pgdata_astro:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-astrooverz} -d ${POSTGRES_DB:-astrooverz}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [web]
+
+  # Optional: DB UI
+  pgadmin:
+    image: dpage/pgadmin4:8
+    env_file: config.env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@astrooverz.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    ports:
+      - "8081:80"
+    depends_on: [db]
+    restart: unless-stopped
+    networks: [web]
+
+volumes:
+  caddydata:
+  caddyconfig:
+  pgdata_astro:
+
+networks:
+  web: {}

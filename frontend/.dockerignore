@@ -1,0 +1,11 @@
+node_modules
+dist
+.vscode
+.git
+
+**/.venv
+**/__pycache__
+**/*.pyc
+**/node_modules
+**/.git
+**/.vscode

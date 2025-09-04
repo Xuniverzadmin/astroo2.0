@@ -1,0 +1,15 @@
+﻿# Redirect www -> apex
+www.astrooverz.com {
+  redir https://astrooverz.com{uri}
+}
+
+# Main site
+astrooverz.com {
+  encode zstd gzip
+
+  # API -> FastAPI in the backend container (port 8000)
+  reverse_proxy /api/* backend:8000
+
+  # Everything else -> production frontend (nginx on :80)
+  reverse_proxy frontend:80
+}
