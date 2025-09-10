@@ -8,6 +8,7 @@ from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 import logging
 import redis.asyncio as redis
+import os
 
 from .core import analyze_name
 from .panchangam.core import assemble_panchangam
@@ -23,12 +24,45 @@ class NameIn(BaseModel):
     """Name analysis request model."""
     name: str = Field(..., min_length=1, description="Name to analyze")
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+class MiniReadingInput(BaseModel):
+    name: str
+    dob: str  # ISO date "YYYY-MM-DD"
+    tob: Optional[str] = None  # "HH:MM"
+    location: Optional[str] = None  # "City, Country" or lat,long
+
+class MiniReadingOutput(BaseModel):
+    summary: str
+
+class AskInput(BaseModel):
+    question: str
+    profile_id: Optional[str] = None
+
+class AskOutput(BaseModel):
+    answer: str
+
 app = FastAPI(title="Astrooverz API", version="1.0.0")
+
+# Configure CORS with environment variable support
+origins_env = os.getenv("CORS_ORIGINS", "")
+origins = [o.strip() for o in origins_env.split(",") if o.strip()] or [
+    "http://localhost:5173",
+    "http://frontend",
+    "https://astrooverz.com",
+    "https://www.astrooverz.com"
+]
 
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,6 +87,47 @@ def healthz():
 @app.get("/api/healthz")
 def api_healthz():
     return {"ok": True, "status": "healthy", "service": "numerology-api"}
+
+@app.post("/auth/login", response_model=LoginResponse)
+def login(req: LoginRequest):
+    """Login endpoint for user authentication."""
+    if not req.email or not req.password:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+    # TODO: replace with real auth
+    return {"access_token": "demo-token", "token_type": "bearer"}
+
+@app.post("/readings/mini", response_model=MiniReadingOutput)
+def mini_reading(payload: MiniReadingInput):
+    """
+    Return a natural-language short summary only.
+    The UI will render summary as plain text.
+    """
+    # TODO: call your real calculators here (numerology + panchangam)
+    # Keep the API contract minimal and stable:
+    text = (
+        f"Hi {payload.name}, based on your details "
+        f"({payload.dob}{' ' + payload.tob if payload.tob else ''}"
+        f"{', ' + payload.location if payload.location else ''}), "
+        "today favors focused tasks over new beginnings. "
+        "Best time window: 10:30–12:00. Avoid major commitments during Rahu Kalam. "
+        "A quick win: finish one pending item and send a progress update."
+    )
+    return {"summary": text}
+
+@app.post("/ask", response_model=AskOutput)
+def ask_astrooverz(payload: AskInput):
+    """
+    LLM-backed answer. Keep the response as a single answer string.
+    """
+    # TODO: integrate your LLM (use env: LLM_API_KEY)
+    # For now, echo a helpful structured answer:
+    answer = (
+        "Here's a concise take:\n"
+        "• Today's energies support communication and short trips.\n"
+        "• If you're pitching, keep it between 11:00–12:00 or 15:30–16:30.\n"
+        "• One action: send a crisp status note to unblock a stakeholder."
+    )
+    return {"answer": answer}
 
 @app.post("/api/analyze_name")
 def analyze_name_endpoint(payload: NameIn):
