@@ -198,7 +198,7 @@ class AstronomyEngine:
             base_date = datetime.combine(date_obj, datetime.min.time()).replace(tzinfo=tz_obj)
             return base_date.replace(hour=6), base_date.replace(hour=18)
     
-    def _find_sun_event(self, base_time: datetime, location: Topos, 
+    def _find_sun_event(self, base_time: datetime, location, 
                        sun, earth, ts: Time, target_altitude: float, 
                        is_sunrise: bool) -> datetime:
         """
