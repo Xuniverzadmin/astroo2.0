@@ -1,4 +1,4 @@
-﻿const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+﻿export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export async function analyzeName(name) {
   const res = await fetch(`${API_BASE}/analyze_name`, {
