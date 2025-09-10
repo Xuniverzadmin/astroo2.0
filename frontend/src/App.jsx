@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 // import { motion } from "framer-motion";
 import { Sparkles, Star, Sun, Moon, Bot, Shield, CreditCard, Compass, Calendar, Users, Globe2, ChevronRight, MessageSquare, HeartHandshake, Cpu } from "lucide-react";
+import Today from "./Today";
 
 // If you use shadcn/ui in your stack, these imports will resolve.
 // Otherwise, the fallback components below will be used.
@@ -199,37 +200,83 @@ export default function AstrooverzLanding() {
   const [dob, setDob] = useState("");
   const [name, setName] = useState("");
   const [loc, setLoc] = useState("");
+  const [timeOfBirth, setTimeOfBirth] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [currentPage, setCurrentPage] = useState("home");
+
+  // Simple routing based on URL hash
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      setCurrentPage(hash || "home");
+    };
+
+    // Set initial page
+    handleHashChange();
+
+    // Listen for hash changes
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  // Handle navigation
+  const navigateTo = (page) => {
+    setCurrentPage(page);
+    window.location.hash = page;
+  };
 
   const submitQuickReading = async (e) => {
     e.preventDefault();
     setLoading(true);
     setResult(null);
     try {
-      // Wire this to your FastAPI numerology endpoint
+      // Validate required fields
+      if (!name || !dob || !timeOfBirth || !loc) {
+        setResult({ error: "Please fill in all required fields: Name, Date of Birth, Time of Birth, and Location." });
+        setLoading(false);
+        return;
+      }
+
+      // Call the FastAPI quick reading endpoint
       const res = await fetch("/api/quick-reading", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, dob, location: loc })
+        body: JSON.stringify({ 
+          name, 
+          dob, 
+          time_of_birth: timeOfBirth,
+          location: loc 
+        })
       });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Failed to get reading");
+      }
+      
       const data = await res.json();
       setResult(data);
     } catch (err) {
-      setResult({ error: "Could not fetch reading. Ensure /api/quick-reading exists." });
+      setResult({ error: err.message || "Could not fetch reading. Please try again." });
     } finally {
       setLoading(false);
     }
   };
 
   const features = useMemo(() => ([
-    { icon: Sun, title: "Vedic Panchangam", text: "Daily auspicious hours (Rahu, Yamaganda, Gulikai), sunrise/sunset, nakshatra & tithi tuned to your latitude/longitude." },
-    { icon: Cpu, title: "LLM-Powered Guidance", text: "Conversational insights blended with numerology & horoscope context for practical decisions." },
-    { icon: Shield, title: "Privacy-First", text: "End-to-end API isolation. Your birth details and readings are encrypted at rest and in transit." },
-    { icon: Calendar, title: "Personal Timeline", text: "Track transits, dasha windows & numerology cycles. Get timely nudges for important actions." },
-    { icon: Users, title: "Family Profiles", text: "Add spouse, kids, parents—create shared rituals, reminders, and compatibility insights." },
-    { icon: Globe2, title: "Anytime, Anywhere", text: "Seamless on web and mobile. Optimized for low bandwidth with offline-ready modules (PWA)." },
+    { icon: Sun, title: "Vedic Panchangam", text: "Daily auspicious hours (Rahu, Yamaganda, Gulikai), sunrise/sunset, nakshatra & tithi tuned to your latitude/longitude as per ancient Maharishi wisdom." },
+    { icon: Cpu, title: "Digital Jothidar", text: "Your personal astrologer powered by AI, blending traditional Vedic knowledge with modern technology for life guidance." },
+    { icon: Shield, title: "Sacred Privacy", text: "Your birth details and readings are treated with the utmost respect and encrypted at rest and in transit." },
+    { icon: Calendar, title: "Life's Timing", text: "Track planetary transits, dasha periods & auspicious moments. Get timely guidance for important life decisions." },
+    { icon: Users, title: "Family Karma", text: "Add spouse, children, parents—create shared rituals, reminders, and compatibility insights for harmonious family life." },
+    { icon: Globe2, title: "Ancient Wisdom, Modern Access", text: "Access the timeless wisdom of Vedic astrology anywhere, anytime through our modern digital platform." },
   ]), []);
+
+  // Render different pages based on current route
+  if (currentPage === "today") {
+    return <Today />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-950 to-slate-900 text-white relative overflow-hidden">
@@ -237,12 +284,14 @@ export default function AstrooverzLanding() {
       {/* NAV */}
       <nav className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <motion.div initial={{ rotate: -10, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="p-1.5 rounded-xl bg-white/10">
+          <div className="p-1.5 rounded-xl bg-white/10">
             <Sparkles className="w-5 h-5" />
-          </motion.div>
+          </div>
           <span className="text-lg md:text-xl font-semibold tracking-wide">Astrooverz</span>
         </div>
         <div className="hidden md:flex items-center gap-6 text-white/80">
+          <button onClick={() => navigateTo("today")} className="hover:text-white">Today's Panchangam</button>
+          <button onClick={() => navigateTo("home")} className="hover:text-white">Home</button>
           <a href="#features" className="hover:text-white">Features</a>
           <a href="#how" className="hover:text-white">How it works</a>
           <a href="#pricing" className="hover:text-white">Pricing</a>
@@ -257,12 +306,12 @@ export default function AstrooverzLanding() {
       {/* HERO */}
       <header className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-20 grid md:grid-cols-2 gap-10 items-center">
         <div>
-          <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6 }} className="text-4xl md:text-6xl font-extrabold leading-tight">
-            Your Personal Astrology & Numerology—
-            <span className="bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent"> powered by AI</span>
-          </motion.h1>
+          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
+            Your Personal Time & Luck Mentor—
+            <span className="bg-gradient-to-r from-emerald-300 to-emerald-500 bg-clip-text text-transparent"> powered by Vedic Wisdom</span>
+          </h1>
           <p className="mt-5 text-white/80 md:text-lg max-w-xl">
-            Astrooverz blends Vedic panchangam, numerology, and modern LLMs to deliver daily guidance that’s personal, practical, and private.
+            Astrooverz is your personalised digital jothidar, guiding life's important events and everyday choices with the wisdom of ancient Vedic astrology as envisioned by the Maharishis. Combining tradition with modern technology, Astrooverz helps you align with the right time, harness good fortune, and navigate life's journey with confidence.
           </p>
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Button className="bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-2">Start free <ChevronRight className="w-4 h-4"/></Button>
@@ -275,12 +324,13 @@ export default function AstrooverzLanding() {
           </div>
         </div>
         <div className="relative">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7 }} className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-2xl">
+          <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-2xl">
             <div className="text-white/90 font-medium mb-3">Instant mini reading</div>
             <form onSubmit={submitQuickReading} className="space-y-3">
               <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required />
               <Input type="date" placeholder="Date of Birth" value={dob} onChange={(e) => setDob(e.target.value)} required />
-              <Input placeholder="Birth Location (City, Country)" value={loc} onChange={(e) => setLoc(e.target.value)} />
+              <Input type="time" placeholder="Time of Birth" value={timeOfBirth} onChange={(e) => setTimeOfBirth(e.target.value)} required />
+              <Input placeholder="Birth Location (City, Country)" value={loc} onChange={(e) => setLoc(e.target.value)} required />
               <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" disabled={loading}>
                 {loading ? "Calculating…" : "Get my quick reading"}
               </Button>
@@ -290,10 +340,10 @@ export default function AstrooverzLanding() {
                 <pre className="whitespace-pre-wrap text-xs bg-black/30 rounded-xl p-3 border border-white/10 max-h-48 overflow-auto">{JSON.stringify(result, null, 2)}</pre>
               )}
               {!result && (
-                <p className="text-white/70 text-xs">We’ll compute a short numerology & panchangam snapshot. No sign-up needed.</p>
+                <p className="text-white/70 text-xs">We'll compute a comprehensive Vedic reading including numerology, panchangam insights, and life guidance. All fields are required for accurate analysis.</p>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
       </header>
 

@@ -7,9 +7,19 @@
     environment:
       PYTHONUNBUFFERED: "1"
       # Build the URL from env vars (quoted is safer due to colons)
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+      REDIS_URL: "redis://redis:6379"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: unless-stopped
     networks: [web]
 
@@ -18,7 +28,7 @@
       context: .
       dockerfile: frontend/dockerfile
       args:
-        VITE_API_URL: "https://astrooverz.com/api"
+        VITE_API_BASE: "/api"
     restart: unless-stopped
     networks: [web]
 
@@ -40,12 +50,25 @@
       POSTGRES_USER: ${POSTGRES_USER:-astrooverz}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-astrooverz123}
     volumes:
-      - pgdata_astro:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-astrooverz} -d ${POSTGRES_DB:-astrooverz}"]
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+    networks: [web]
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     restart: unless-stopped
     networks: [web]
 
@@ -65,7 +88,8 @@
 volumes:
   caddydata:
   caddyconfig:
-  pgdata_astro:
+  pgdata:
+  redisdata:
 
 networks:
   web: {}
