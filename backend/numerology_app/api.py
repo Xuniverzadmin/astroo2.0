@@ -1,14 +1,25 @@
 from fastapi import FastAPI, HTTPException, Query, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache.decorator import cache
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 import logging
-import redis.asyncio as redis
 import os
+
+# --- Caching imports (with safe fallback for editors/local) ---
+try:
+    from fastapi_cache import FastAPICache  # type: ignore
+    from fastapi_cache.backends.redis import RedisBackend  # type: ignore
+    from fastapi_cache.decorator import cache  # type: ignore
+    import redis.asyncio as redis  # type: ignore
+    _CACHE_OK = True
+except Exception:
+    _CACHE_OK = False
+    def cache(*_args, **_kw):
+        # no-op decorator when cache libs aren't installed/available
+        def _wrap(fn):
+            return fn
+        return _wrap
 
 from .core import analyze_name
 from .panchangam.core import assemble_panchangam
@@ -97,6 +108,7 @@ def login(req: LoginRequest):
     return {"access_token": "demo-token", "token_type": "bearer"}
 
 @app.post("/readings/mini", response_model=MiniReadingOutput)
+@cache(expire=120)  # cache identical inputs for 2 minutes
 def mini_reading(payload: MiniReadingInput):
     """
     Return a natural-language short summary only.
@@ -115,6 +127,7 @@ def mini_reading(payload: MiniReadingInput):
     return {"summary": text}
 
 @app.post("/ask", response_model=AskOutput)
+@cache(expire=60)  # cache short-lived answers for 1 minute
 def ask_astrooverz(payload: AskInput):
     """
     LLM-backed answer. Keep the response as a single answer string.
@@ -256,20 +269,20 @@ class PanchangamRequest(BaseModel):
     settings: Optional[Dict[str, Any]] = Field(default=None, description="Additional settings")
 
 
-# Initialize Redis cache
 @app.on_event("startup")
-async def startup():
-    """Initialize Redis cache on startup."""
-    if settings.REDIS_URL:
+async def _init_cache():
+    """Initialize Redis cache on startup with safe fallback."""
+    if _CACHE_OK:
         try:
-            redis_client = redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
-            FastAPICache.init(RedisBackend(redis_client), prefix="panchangam-cache")
+            url = os.getenv("REDIS_URL", "redis://redis:6379/0")
+            r = redis.from_url(url, encoding="utf-8", decode_responses=True)
+            FastAPICache.init(RedisBackend(r), prefix="astrooverz")
             logger.info("Redis cache initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Redis cache: {str(e)}")
             logger.info("Continuing without cache")
     else:
-        logger.info("No Redis URL provided, running without cache")
+        logger.info("Cache libraries not available, running without cache")
 
 
 # Panchangam Routes - Friendly API endpoints (ordered from most specific to least specific)

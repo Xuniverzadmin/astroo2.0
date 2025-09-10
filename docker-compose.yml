@@ -8,13 +8,13 @@
       PYTHONUNBUFFERED: "1"
       # Build the URL from env vars (quoted is safer due to colons)
       DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
-      REDIS_URL: "redis://redis:6379"
+      REDIS_URL: ${REDIS_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
       LLM_API_KEY: ${OPENAI_API_KEY}
     depends_on:
-      db:
-        condition: service_healthy
       redis:
+        condition: service_healthy
+      db:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
