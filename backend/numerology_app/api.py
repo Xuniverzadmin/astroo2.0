@@ -198,7 +198,34 @@ async def startup():
         logger.info("No Redis URL provided, running without cache")
 
 
-# Panchangam Routes - Friendly API endpoints
+# Panchangam Routes - Friendly API endpoints (ordered from most specific to least specific)
+@app.get("/api/panchangam/today")
+@cache(expire=3600)  # Cache for 1 hour
+async def get_panchangam_today(
+    lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
+    lon: float = Query(80.2707, ge=-180, le=180, description="Longitude in degrees"),
+    tz: str = Query("Asia/Kolkata", description="Timezone string"),
+):
+    """
+    Get panchangam for today's date and location.
+    
+    Args:
+        lat: Latitude in degrees (default: 13.0827 for Chennai)
+        lon: Longitude in degrees (default: 80.2707 for Chennai)
+        tz: Timezone string (default: Asia/Kolkata)
+    
+    Returns:
+        Complete panchangam information for today.
+    """
+    try:
+        today = datetime.now().date()
+        logger.info(f"Calculating panchangam for today ({today}) at ({lat}, {lon}) in {tz}")
+        return assemble_panchangam(today, lat, lon, tz, settings=None)
+    except Exception as e:
+        logger.error(f"Error calculating panchangam for today: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/panchangam/{the_date}")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_panchangam_by_path(
@@ -252,33 +279,6 @@ async def get_panchangam_by_query(
         return assemble_panchangam(date_, lat, lon, tz, settings=None)
     except Exception as e:
         logger.error(f"Error calculating panchangam for {date_}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/panchangam/today")
-@cache(expire=3600)  # Cache for 1 hour
-async def get_panchangam_today(
-    lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
-    lon: float = Query(80.2707, ge=-180, le=180, description="Longitude in degrees"),
-    tz: str = Query("Asia/Kolkata", description="Timezone string"),
-):
-    """
-    Get panchangam for today's date and location.
-    
-    Args:
-        lat: Latitude in degrees (default: 13.0827 for Chennai)
-        lon: Longitude in degrees (default: 80.2707 for Chennai)
-        tz: Timezone string (default: Asia/Kolkata)
-    
-    Returns:
-        Complete panchangam information for today.
-    """
-    try:
-        today = datetime.now().date()
-        logger.info(f"Calculating panchangam for today ({today}) at ({lat}, {lon}) in {tz}")
-        return assemble_panchangam(today, lat, lon, tz, settings=None)
-    except Exception as e:
-        logger.error(f"Error calculating panchangam for today: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
