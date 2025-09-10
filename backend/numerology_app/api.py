@@ -198,46 +198,7 @@ async def startup():
         logger.info("No Redis URL provided, running without cache")
 
 
-# Panchangam Routes
-@app.get("/api/panchangam/{date}", response_model=PanchangamResponse)
-@cache(expire=3600)  # Cache for 1 hour
-async def get_panchangam(
-    date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
-    lat: float = Query(..., ge=-90, le=90, description="Latitude in degrees"),
-    lon: float = Query(..., ge=-180, le=180, description="Longitude in degrees"),
-    tz: str = Query(default="Asia/Kolkata", description="Timezone string")
-):
-    """
-    Get panchangam for a specific date and location.
-    
-    Args:
-        date: Date for calculation (YYYY-MM-DD)
-        lat: Latitude in degrees (-90 to 90)
-        lon: Longitude in degrees (-180 to 180)
-        tz: Timezone string (default: Asia/Kolkata)
-    
-    Returns:
-        Complete panchangam information including tithi, nakshatra, yoga, karana,
-        timing periods, horas, and Gowri panchangam.
-    """
-    try:
-        logger.info(f"Calculating panchangam for {date} at ({lat}, {lon}) in {tz}")
-        
-        # Assemble panchangam
-        panchangam_data = assemble_panchangam(date, lat, lon, tz)
-        
-        # Convert to response model
-        response = PanchangamResponse(**panchangam_data)
-        
-        logger.info(f"Successfully calculated panchangam for {date}")
-        return response
-        
-    except Exception as e:
-        logger.error(f"Error calculating panchangam for {date}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error during panchangam calculation")
-
-
-# Additional friendly panchangam routes
+# Panchangam Routes - Friendly API endpoints
 @app.get("/api/panchangam/{the_date}")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_panchangam_by_path(
