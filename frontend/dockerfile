@@ -17,8 +17,8 @@ RUN npm ci
 COPY frontend/ ./
 
 # Accept Vite API URL at build time
-ARG VITE_API_BASE=/api
-ENV VITE_API_BASE=$VITE_API_BASE
+ARG VITE_API_URL=https://api.astrooverz.com
+ENV VITE_API_URL=$VITE_API_URL
 
 # Expose port for development server
 EXPOSE 5173
@@ -36,8 +36,8 @@ RUN npm ci
 COPY frontend/ ./
 
 # Accept Vite API URL at build time
-ARG VITE_API_BASE=/api
-ENV VITE_API_BASE=$VITE_API_BASE
+ARG VITE_API_URL=https://api.astrooverz.com
+ENV VITE_API_URL=$VITE_API_URL
 
 # Build the application
 RUN npm run build

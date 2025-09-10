@@ -1,4 +1,16 @@
-﻿export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
+﻿export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
+export async function apiJSON(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
 
 export async function analyzeName(name) {
   const res = await fetch(`${API_BASE}/analyze_name`, {
@@ -20,4 +32,25 @@ export async function checkHealth() {
   const res = await fetch(`${API_BASE}/healthz`);
   if (!res.ok) throw new Error("Health check failed");
   return res.json();
+}
+
+export async function login(email, password) {
+  return apiJSON("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function getMiniReading(data) {
+  return apiJSON("/readings/mini", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function askAstrooverz(question, profileId = null) {
+  return apiJSON("/ask", {
+    method: "POST",
+    body: JSON.stringify({ question, profile_id: profileId }),
+  });
 }

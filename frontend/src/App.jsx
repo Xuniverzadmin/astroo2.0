@@ -2,6 +2,11 @@
 // import { motion } from "framer-motion";
 import { Sparkles, Star, Sun, Moon, Bot, Shield, CreditCard, Compass, Calendar, Users, Globe2, ChevronRight, MessageSquare, HeartHandshake, Cpu } from "lucide-react";
 import Today from "./Today";
+import SignIn from "./components/SignIn";
+import GetStartedCTA from "./components/GetStartedCTA";
+import AskAstrooverz from "./components/AskAstrooverz";
+import InstantMiniReading from "./components/InstantMiniReading";
+import Onboarding from "./pages/Onboarding";
 
 // If you use shadcn/ui in your stack, these imports will resolve.
 // Otherwise, the fallback components below will be used.
@@ -126,60 +131,17 @@ const ChatBubble = ({ role, text }) => (
 
 const ChatWidget = () => {
   const [open, setOpen] = useState(false);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: "assistant", text: "Hi! I’m your Astrooverz guide. Ask me about your numerology, today’s panchangam, or compatibility." },
-  ]);
-
-  const send = async () => {
-    if (!input.trim()) return;
-    const userMsg = { role: "user", text: input.trim() };
-    setMessages((m) => [...m, userMsg]);
-    setInput("");
-    setLoading(true);
-    try {
-      // Backend placeholder: change to your FastAPI route
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [...messages, userMsg].map(({ role, text }) => ({ role, content: text })),
-        }),
-      });
-      if (!res.ok) throw new Error("Chat API error");
-      const data = await res.json();
-      const reply = data?.reply || "Here’s a sample response. Hook me to your LLM API at /api/chat.";
-      setMessages((m) => [...m, { role: "assistant", text: reply }]);
-    } catch (e) {
-      setMessages((m) => [...m, { role: "assistant", text: "Hmm, I couldn’t reach the server. Check your /api/chat route." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="fixed bottom-4 right-4 z-50">
       {open ? (
         <Card className="w-[360px] sm:w-[420px] bg-gradient-to-b from-slate-900/95 to-slate-800/95 border-white/10 backdrop-blur-xl">
           <CardHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2 text-white"><Bot className="w-5 h-5"/> Astrooverz Chat</div>
+            <div className="flex items-center gap-2 text-white"><Bot className="w-5 h-5"/> Ask Astrooverz</div>
             <button onClick={() => setOpen(false)} className="text-white/80 hover:text-white">✕</button>
           </CardHeader>
           <CardContent>
-            <div className="h-64 overflow-y-auto space-y-3 pr-1">
-              {messages.map((m, idx) => <ChatBubble key={idx} role={m.role} text={m.text} />)}
-              {loading && <ChatBubble role="assistant" text="Typing…" />}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Input
-                placeholder="Ask about numerology, panchangam, tarot…"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && send()}
-              />
-              <Button onClick={send} className="bg-emerald-500 hover:bg-emerald-600 text-white">Send</Button>
-            </div>
+            <AskAstrooverz />
           </CardContent>
         </Card>
       ) : (
@@ -199,12 +161,6 @@ const KPI = ({ value, label }) => (
 );
 
 export default function AstrooverzLanding() {
-  const [dob, setDob] = useState("");
-  const [name, setName] = useState("");
-  const [loc, setLoc] = useState("");
-  const [timeOfBirth, setTimeOfBirth] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [currentPage, setCurrentPage] = useState("home");
 
   // Simple routing based on URL hash
@@ -228,43 +184,6 @@ export default function AstrooverzLanding() {
     window.location.hash = page;
   };
 
-  const submitQuickReading = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setResult(null);
-    try {
-      // Validate required fields
-      if (!name || !dob || !timeOfBirth || !loc) {
-        setResult({ error: "Please fill in all required fields: Name, Date of Birth, Time of Birth, and Location." });
-        setLoading(false);
-        return;
-      }
-
-      // Call the FastAPI quick reading endpoint
-      const res = await fetch("/api/quick-reading", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          name, 
-          dob, 
-          time_of_birth: timeOfBirth,
-          location: loc 
-        })
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Failed to get reading");
-      }
-      
-      const data = await res.json();
-      setResult(data);
-    } catch (err) {
-      setResult({ error: err.message || "Could not fetch reading. Please try again." });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const features = useMemo(() => ([
     { icon: Sun, title: "Vedic Panchangam", text: "Daily auspicious hours (Rahu, Yamaganda, Gulikai), sunrise/sunset, nakshatra & tithi tuned to your latitude/longitude as per ancient Maharishi wisdom." },
@@ -278,6 +197,38 @@ export default function AstrooverzLanding() {
   // Render different pages based on current route
   if (currentPage === "today") {
     return <Today />;
+  }
+  
+  if (currentPage === "onboarding") {
+    return <Onboarding />;
+  }
+  
+  if (currentPage === "signin") {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-950 to-slate-900 text-white flex items-center justify-center">
+        <div className="max-w-md w-full p-6">
+          <div className="text-center mb-6">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="p-1.5 rounded-xl bg-white/10">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <span className="text-xl font-semibold">Astrooverz</span>
+            </div>
+            <h1 className="text-2xl font-bold">Sign In</h1>
+            <p className="text-white/70 mt-2">Welcome back to your personalized guidance</p>
+          </div>
+          <SignIn onSuccess={() => navigateTo("home")} />
+          <div className="text-center mt-4">
+            <button 
+              onClick={() => navigateTo("home")} 
+              className="text-white/70 hover:text-white text-sm"
+            >
+              ← Back to Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -300,8 +251,13 @@ export default function AstrooverzLanding() {
           <a href="#faq" className="hover:text-white">FAQ</a>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="bg-white/10 text-white hover:bg-white/20">Sign in</Button>
-          <Button className="bg-emerald-500 hover:bg-emerald-600 text-white">Get started</Button>
+          <Button 
+            className="bg-white/10 text-white hover:bg-white/20"
+            onClick={() => navigateTo("signin")}
+          >
+            Sign in
+          </Button>
+          <GetStartedCTA />
         </div>
       </nav>
 
@@ -328,23 +284,7 @@ export default function AstrooverzLanding() {
         <div className="relative">
           <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-2xl">
             <div className="text-white/90 font-medium mb-3">Instant mini reading</div>
-            <form onSubmit={submitQuickReading} className="space-y-3">
-              <Input placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} required />
-              <Input type="date" placeholder="Date of Birth" value={dob} onChange={(e) => setDob(e.target.value)} required />
-              <Input type="time" placeholder="Time of Birth" value={timeOfBirth} onChange={(e) => setTimeOfBirth(e.target.value)} required />
-              <Input placeholder="Birth Location (City, Country)" value={loc} onChange={(e) => setLoc(e.target.value)} required />
-              <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" disabled={loading}>
-                {loading ? "Calculating…" : "Get my quick reading"}
-              </Button>
-            </form>
-            <div className="mt-4 min-h-20 text-sm text-white/90">
-              {result && (
-                <pre className="whitespace-pre-wrap text-xs bg-black/30 rounded-xl p-3 border border-white/10 max-h-48 overflow-auto">{JSON.stringify(result, null, 2)}</pre>
-              )}
-              {!result && (
-                <p className="text-white/70 text-xs">We'll compute a comprehensive Vedic reading including numerology, panchangam insights, and life guidance. All fields are required for accurate analysis.</p>
-              )}
-            </div>
+            <InstantMiniReading />
           </div>
         </div>
       </header>
