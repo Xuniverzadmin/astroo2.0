@@ -6,9 +6,9 @@ astrooverz.com, www.astrooverz.com {
     @api path /api/* /api/healthz /healthz
     reverse_proxy @api backend:8000
 
-    # 2) Good crawlers get pre-rendered HTML
-    @goodbots header_regexp UA User-Agent (?i)(Googlebot|Bingbot|Applebot|DuckDuckBot|GPTBot)
-    reverse_proxy @goodbots prerender:3000
+    # 2) Good crawlers get pre-rendered HTML (prerenderer temporarily disabled)
+    # @goodbots header_regexp UA User-Agent (?i)(Googlebot|Bingbot|Applebot|DuckDuckBot|GPTBot)
+    # reverse_proxy @goodbots prerender:3000
 
     # 3) Everyone else gets the SPA
     reverse_proxy frontend:80
