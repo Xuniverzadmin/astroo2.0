@@ -74,10 +74,12 @@ def diag_panchangam(
     lines = [
         f"Date: {the_date}  TZ: {tz}  LatLon: {lat},{lon}",
         f"Sunrise: {data['sunrise']}  Sunset: {data['sunset']}",
-        f"Tithi: {data['tithi']['name']}  Start: {data['tithi']['start']}  End: {data['tithi']['end']}",
-        f"Nakshatra: {data['nakshatra']['name']}  Start: {data['nakshatra']['start']}  End: {data['nakshatra']['end']}",
+        f"Tithi: {data['tithi']['name']} ({data['tithi']['percentage']}%)",
+        f"Nakshatra: {data['nakshatra']['name']} ({data['nakshatra']['percentage']}%)",
         f"Yoga: {data['yoga']['name']}  Karana: {data['karana']['name']}",
-        f"Rahu: {data['rahu_kaalam']}  Yamagandam: {data['yamagandam']}  Gulikai: {data['gulikai']}",
-        f"Nalla Neram AM: {data['nalla_neram'].get('am','-')}  PM: {data['nalla_neram'].get('pm','-')}",
+        f"Rahu Kalam: {data['rahu_kalam']}",
+        f"Yama Gandam: {data['yama_gandam']}",
+        f"Gulikai Kalam: {data['gulikai_kalam']}",
+        f"Gowri Panchangam: {data.get('gowri_panchangam', {}).get('periods', {})}",
     ]
     return "\n".join(lines)
