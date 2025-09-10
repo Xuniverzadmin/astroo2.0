@@ -87,7 +87,7 @@
 
   # Prerenderer for dynamic rendering for bots
   prerender:
-    image: prerender/prerender:latest
+    image: prerender/prerender:6.8.1
     restart: unless-stopped
     environment:
       - PRERENDER_NUM_WORKERS=2
