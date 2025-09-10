@@ -70,14 +70,20 @@ def diag_panchangam(
     lon: float = Query(80.2707),
     tz: str = Query("Asia/Kolkata"),
 ):
-    data = assemble_panchangam(the_date, lat, lon, tz, settings=None)
-    lines = [
-        f"Date: {the_date}  TZ: {tz}  LatLon: {lat},{lon}",
-        f"Sunrise: {data['sunrise']}  Sunset: {data['sunset']}",
-        f"Tithi: {data['tithi']['name']}  Start: {data['tithi']['start']}  End: {data['tithi']['end']}",
-        f"Nakshatra: {data['nakshatra']['name']}  Start: {data['nakshatra']['start']}  End: {data['nakshatra']['end']}",
-        f"Yoga: {data['yoga']['name']}  Karana: {data['karana']['name']}",
-        f"Rahu: {data['rahu_kaalam']}  Yamagandam: {data['yamagandam']}  Gulikai: {data['gulikai']}",
-        f"Nalla Neram AM: {data['nalla_neram'].get('am','-')}  PM: {data['nalla_neram'].get('pm','-')}",
-    ]
-    return "\n".join(lines)
+    try:
+        data = assemble_panchangam(the_date, lat, lon, tz, settings=None)
+        lines = [
+            f"Date: {the_date}  TZ: {tz}  LatLon: {lat},{lon}",
+            f"Sunrise: {data.get('sunrise')}  Sunset: {data.get('sunset')}",
+            f"Tithi: {data.get('tithi',{}).get('name')} ({data.get('tithi',{}).get('percentage', 'N/A')}%)",
+            f"Nakshatra: {data.get('nakshatra',{}).get('name')} ({data.get('nakshatra',{}).get('percentage', 'N/A')}%)",
+            f"Yoga: {data.get('yoga',{}).get('name')}  Karana: {data.get('karana',{}).get('name')}",
+            f"Rahu Kalam: {data.get('rahu_kalam')}",
+            f"Yama Gandam: {data.get('yama_gandam')}",
+            f"Gulikai Kalam: {data.get('gulikai_kalam')}",
+            f"Gowri Panchangam: {data.get('gowri_panchangam', {}).get('periods', {})}",
+        ]
+        return "\n".join(lines)
+    except Exception:
+        import traceback
+        return "ERROR\n" + traceback.format_exc()
