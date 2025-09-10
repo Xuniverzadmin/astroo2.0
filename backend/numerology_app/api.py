@@ -18,6 +18,11 @@ from .config import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Pydantic Models
+class NameIn(BaseModel):
+    """Name analysis request model."""
+    name: str = Field(..., min_length=1, description="Name to analyze")
+
 app = FastAPI(title="Astrooverz API", version="1.0.0")
 
 # Add CORS middleware
@@ -74,12 +79,6 @@ def analyze_name_get(name: str):
     except Exception as e:
         logger.error(f"Error analyzing name '{name}': {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error during name analysis")
-
-
-# Pydantic Models
-class NameIn(BaseModel):
-    """Name analysis request model."""
-    name: str = Field(..., min_length=1, description="Name to analyze")
 
 
 # Pydantic Models for Panchangam API
@@ -226,44 +225,16 @@ async def get_panchangam_today(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/panchangam/{the_date}")
+@app.get("/api/panchangam/{date}")
 @cache(expire=3600)  # Cache for 1 hour
-async def get_panchangam_by_path(
-    the_date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
+async def get_panchangam_by_date(
+    date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
     lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
     lon: float = Query(80.2707, ge=-180, le=180, description="Longitude in degrees"),
     tz: str = Query("Asia/Kolkata", description="Timezone string"),
 ):
     """
-    Get panchangam for a specific date and location (path-style with defaults).
-    
-    Args:
-        the_date: Date for calculation (YYYY-MM-DD)
-        lat: Latitude in degrees (default: 13.0827 for Chennai)
-        lon: Longitude in degrees (default: 80.2707 for Chennai)
-        tz: Timezone string (default: Asia/Kolkata)
-    
-    Returns:
-        Complete panchangam information.
-    """
-    try:
-        logger.info(f"Calculating panchangam for {the_date} at ({lat}, {lon}) in {tz}")
-        return assemble_panchangam(the_date, lat, lon, tz, settings=None)
-    except Exception as e:
-        logger.error(f"Error calculating panchangam for {the_date}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/panchangam")
-@cache(expire=3600)  # Cache for 1 hour
-async def get_panchangam_by_query(
-    date_: date = Query(..., alias="date", description="Date for panchangam calculation (YYYY-MM-DD)"),
-    lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
-    lon: float = Query(80.2707, ge=-180, le=180, description="Longitude in degrees"),
-    tz: str = Query("Asia/Kolkata", description="Timezone string"),
-):
-    """
-    Get panchangam for a specific date and location (query-style with defaults).
+    Get panchangam for a specific date and location.
     
     Args:
         date: Date for calculation (YYYY-MM-DD)
@@ -275,10 +246,10 @@ async def get_panchangam_by_query(
         Complete panchangam information.
     """
     try:
-        logger.info(f"Calculating panchangam for {date_} at ({lat}, {lon}) in {tz}")
-        return assemble_panchangam(date_, lat, lon, tz, settings=None)
+        logger.info(f"Calculating panchangam for {date} at ({lat}, {lon}) in {tz}")
+        return assemble_panchangam(date, lat, lon, tz, settings=None)
     except Exception as e:
-        logger.error(f"Error calculating panchangam for {date_}: {str(e)}")
+        logger.error(f"Error calculating panchangam for {date}: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
