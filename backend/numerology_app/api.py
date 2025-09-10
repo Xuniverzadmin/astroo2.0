@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query, Path
+from fastapi import FastAPI, HTTPException, Query, Path, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
@@ -28,6 +28,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add 404 tracer middleware
+@app.middleware("http")
+async def log_404s(request: Request, call_next):
+    resp = await call_next(request)
+    if resp.status_code == 404:
+        logger.warning(f"404: {request.method} {request.url}")
+    return resp
 
 @app.get("/")
 def root():
@@ -190,43 +198,88 @@ async def startup():
         logger.info("No Redis URL provided, running without cache")
 
 
-# Panchangam Routes
-@app.get("/api/panchangam/{date}", response_model=PanchangamResponse)
+# Panchangam Routes - Friendly API endpoints (ordered from most specific to least specific)
+@app.get("/api/panchangam/today")
 @cache(expire=3600)  # Cache for 1 hour
-async def get_panchangam(
-    date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
-    lat: float = Query(..., ge=-90, le=90, description="Latitude in degrees"),
-    lon: float = Query(..., ge=-180, le=180, description="Longitude in degrees"),
-    tz: str = Query(default="Asia/Kolkata", description="Timezone string")
+async def get_panchangam_today(
+    lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
+    lon: float = Query(80.2707, ge=-180, le=180, description="Longitude in degrees"),
+    tz: str = Query("Asia/Kolkata", description="Timezone string"),
 ):
     """
-    Get panchangam for a specific date and location.
+    Get panchangam for today's date and location.
     
     Args:
-        date: Date for calculation (YYYY-MM-DD)
-        lat: Latitude in degrees (-90 to 90)
-        lon: Longitude in degrees (-180 to 180)
+        lat: Latitude in degrees (default: 13.0827 for Chennai)
+        lon: Longitude in degrees (default: 80.2707 for Chennai)
         tz: Timezone string (default: Asia/Kolkata)
     
     Returns:
-        Complete panchangam information including tithi, nakshatra, yoga, karana,
-        timing periods, horas, and Gowri panchangam.
+        Complete panchangam information for today.
     """
     try:
-        logger.info(f"Calculating panchangam for {date} at ({lat}, {lon}) in {tz}")
-        
-        # Assemble panchangam
-        panchangam_data = assemble_panchangam(date, lat, lon, tz)
-        
-        # Convert to response model
-        response = PanchangamResponse(**panchangam_data)
-        
-        logger.info(f"Successfully calculated panchangam for {date}")
-        return response
-        
+        today = datetime.now().date()
+        logger.info(f"Calculating panchangam for today ({today}) at ({lat}, {lon}) in {tz}")
+        return assemble_panchangam(today, lat, lon, tz, settings=None)
     except Exception as e:
-        logger.error(f"Error calculating panchangam for {date}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal server error during panchangam calculation")
+        logger.error(f"Error calculating panchangam for today: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/panchangam/{the_date}")
+@cache(expire=3600)  # Cache for 1 hour
+async def get_panchangam_by_path(
+    the_date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
+    lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
+    lon: float = Query(80.2707, ge=-180, le=180, description="Longitude in degrees"),
+    tz: str = Query("Asia/Kolkata", description="Timezone string"),
+):
+    """
+    Get panchangam for a specific date and location (path-style with defaults).
+    
+    Args:
+        the_date: Date for calculation (YYYY-MM-DD)
+        lat: Latitude in degrees (default: 13.0827 for Chennai)
+        lon: Longitude in degrees (default: 80.2707 for Chennai)
+        tz: Timezone string (default: Asia/Kolkata)
+    
+    Returns:
+        Complete panchangam information.
+    """
+    try:
+        logger.info(f"Calculating panchangam for {the_date} at ({lat}, {lon}) in {tz}")
+        return assemble_panchangam(the_date, lat, lon, tz, settings=None)
+    except Exception as e:
+        logger.error(f"Error calculating panchangam for {the_date}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/panchangam")
+@cache(expire=3600)  # Cache for 1 hour
+async def get_panchangam_by_query(
+    date_: date = Query(..., alias="date", description="Date for panchangam calculation (YYYY-MM-DD)"),
+    lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
+    lon: float = Query(80.2707, ge=-180, le=180, description="Longitude in degrees"),
+    tz: str = Query("Asia/Kolkata", description="Timezone string"),
+):
+    """
+    Get panchangam for a specific date and location (query-style with defaults).
+    
+    Args:
+        date: Date for calculation (YYYY-MM-DD)
+        lat: Latitude in degrees (default: 13.0827 for Chennai)
+        lon: Longitude in degrees (default: 80.2707 for Chennai)
+        tz: Timezone string (default: Asia/Kolkata)
+    
+    Returns:
+        Complete panchangam information.
+    """
+    try:
+        logger.info(f"Calculating panchangam for {date_} at ({lat}, {lon}) in {tz}")
+        return assemble_panchangam(date_, lat, lon, tz, settings=None)
+    except Exception as e:
+        logger.error(f"Error calculating panchangam for {date_}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/calendar/{year}/{month}")

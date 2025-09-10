@@ -19,11 +19,11 @@ from skyfield.positionlib import Apparent
 from skyfield.constants import AU_KM
 
 # Ephemeris configuration
-EPH_PATH = os.getenv("EPHEMERIS_FILE", "/app/data/de421.bsp")
+EPH_PATH = os.getenv("EPHEMERIS_FILE", "de421.bsp")  # Let Skyfield handle the download
 ts = load.timescale()
 
 def get_ephemeris():
-    """Load ephemeris from disk (no network download)"""
+    """Load ephemeris - let Skyfield handle download if needed"""
     return load(EPH_PATH)
 
 def get_observer(lat: float, lon: float, elevation_m: float = 0.0):
