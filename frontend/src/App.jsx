@@ -81,11 +81,13 @@ const Stars = () => {
 };
 
 const Feature = ({ icon: Icon, title, children }) => (
-  <Card className="bg-white/5 border-white/10">
+  <Card className="bg-white/5 border-white/10" role="article" aria-labelledby={`feature-${title.toLowerCase().replace(/\s+/g, '-')}`}>
     <CardHeader>
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-white/10"><Icon className="w-5 h-5" /></div>
-        <CardTitle className="text-white">{title}</CardTitle>
+        <div className="p-2 rounded-xl bg-white/10" aria-hidden="true">
+          <Icon className="w-5 h-5" />
+        </div>
+        <CardTitle id={`feature-${title.toLowerCase().replace(/\s+/g, '-')}`} className="text-white">{title}</CardTitle>
       </div>
     </CardHeader>
     <CardContent className="text-sm text-white/80 leading-relaxed">{children}</CardContent>
@@ -282,7 +284,7 @@ export default function AstrooverzLanding() {
     <div className="min-h-screen bg-gradient-to-b from-indigo-950 via-slate-950 to-slate-900 text-white relative overflow-hidden">
       <Stars />
       {/* NAV */}
-      <nav className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between">
+      <nav className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-5 flex items-center justify-between" role="navigation" aria-label="Main navigation">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-xl bg-white/10">
             <Sparkles className="w-5 h-5" />
@@ -348,8 +350,8 @@ export default function AstrooverzLanding() {
       </header>
 
       {/* FEATURES */}
-      <section id="features" className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-14">
-        <h2 className="text-2xl md:text-3xl font-bold">Designed for clarity and calm</h2>
+      <section id="features" className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-14" aria-labelledby="features-heading">
+        <h2 id="features-heading" className="text-2xl md:text-3xl font-bold">Designed for clarity and calm</h2>
         <p className="text-white/70 mt-2 max-w-2xl">All the wisdom you want—without the clutter. A lightweight, secure stack tuned for speed and privacy.</p>
         <div className="mt-8 grid md:grid-cols-3 gap-5">
           {features.map((f, i) => (
@@ -359,7 +361,8 @@ export default function AstrooverzLanding() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section id="how" className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-14">
+      <section id="how" className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-14" aria-labelledby="how-heading">
+        <h2 id="how-heading" className="text-2xl md:text-3xl font-bold mb-8">How Astrooverz Works</h2>
         <div className="grid md:grid-cols-3 gap-6">
           <Card>
             <CardHeader><CardTitle className="text-white">1. Create your profile</CardTitle></CardHeader>
@@ -383,8 +386,8 @@ export default function AstrooverzLanding() {
       </section>
 
       {/* PRICING */}
-      <section id="pricing" className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-14">
-        <h2 className="text-2xl md:text-3xl font-bold">Simple, transparent pricing</h2>
+      <section id="pricing" className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-14" aria-labelledby="pricing-heading">
+        <h2 id="pricing-heading" className="text-2xl md:text-3xl font-bold">Simple, transparent pricing</h2>
         <p className="text-white/70 mt-2 max-w-2xl">Start free. Upgrade when you want deeper insights and family features.</p>
         <div className="mt-8 grid md:grid-cols-3 gap-6">
           <Tier
@@ -428,8 +431,8 @@ export default function AstrooverzLanding() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 py-14">
-        <h2 className="text-2xl md:text-3xl font-bold">Frequently asked</h2>
+      <section id="faq" className="relative z-10 max-w-4xl mx-auto px-4 md:px-8 py-14" aria-labelledby="faq-heading">
+        <h2 id="faq-heading" className="text-2xl md:text-3xl font-bold">Frequently asked questions</h2>
         <div className="mt-6 grid gap-4">
           <Card>
             <CardHeader><CardTitle className="text-white">Is this scientific or spiritual?</CardTitle></CardHeader>
