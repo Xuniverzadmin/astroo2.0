@@ -5,10 +5,72 @@ astrooverz.com, www.astrooverz.com {
     @api path /api/* /healthz /api/healthz
     reverse_proxy @api backend:8000
 
-    # If frontend is its own container
-    reverse_proxy frontend:80
+    # Bot detection for prerendering
+    @bots {
+        header User-Agent "*bot*"
+        header User-Agent "*crawler*"
+        header User-Agent "*spider*"
+        header User-Agent "*scraper*"
+        header User-Agent "Googlebot*"
+        header User-Agent "Bingbot*"
+        header User-Agent "Slurp*"
+        header User-Agent "DuckDuckBot*"
+        header User-Agent "Baiduspider*"
+        header User-Agent "YandexBot*"
+        header User-Agent "facebookexternalhit*"
+        header User-Agent "Twitterbot*"
+        header User-Agent "LinkedInBot*"
+        header User-Agent "WhatsApp*"
+        header User-Agent "TelegramBot*"
+        header User-Agent "ChatGPT-User*"
+        header User-Agent "GPTBot*"
+        header User-Agent "CCBot*"
+        header User-Agent "anthropic-ai*"
+        header User-Agent "Claude-Web*"
+        header User-Agent "PerplexityBot*"
+        header User-Agent "YouBot*"
+        header User-Agent "Mozilla/5.0 (compatible; Google-Extended)"
+        header User-Agent "Mozilla/5.0 (compatible; Bard)"
+    }
 
-    # Optional: security headers
+    # Prerender for bots
+    @prerender {
+        not path /api/*
+        not path /healthz
+        not path /robots.txt
+        not path /sitemap.xml
+        not path *.css
+        not path *.js
+        not path *.png
+        not path *.jpg
+        not path *.jpeg
+        not path *.gif
+        not path *.ico
+        not path *.svg
+        not path *.woff
+        not path *.woff2
+        not path *.ttf
+        not path *.eot
+    }
+
+    # Route bots to prerenderer
+    handle @bots @prerender {
+        reverse_proxy prerender:3000
+        header Cache-Control "public, max-age=3600"
+    }
+
+    # Regular users get the frontend
+    handle @prerender {
+        reverse_proxy frontend:80
+        header Cache-Control "public, max-age=300"
+    }
+
+    # Fallback for all other requests
+    handle {
+        reverse_proxy frontend:80
+    }
+
+    # Security headers
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
