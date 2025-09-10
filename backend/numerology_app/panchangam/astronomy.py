@@ -134,8 +134,8 @@ class AstronomyEngine:
         ts = self.get_timescale()
         timezone = pytz.timezone(tz)
         
-        # Create location
-        location = Topos(lat, lon)
+        # Create location with proper units
+        location = Topos(latitude_degrees=lat, longitude_degrees=lon)
         
         # Get sun
         sun = self.eph['sun']
