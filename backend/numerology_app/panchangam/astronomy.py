@@ -7,14 +7,72 @@ sidereal longitude calculations with Lahiri ayanamsa.
 """
 
 import math
-from datetime import datetime, date
+import os
+from datetime import datetime, date, timezone
 from typing import Tuple, Optional
-import pytz
+import zoneinfo
 
-from skyfield.api import load, Topos
+from skyfield.api import load, wgs84, N, E
+from skyfield import almanac
 from skyfield.timelib import Time
 from skyfield.positionlib import Apparent
 from skyfield.constants import AU_KM
+
+# Ephemeris configuration
+EPH_PATH = os.getenv("EPHEMERIS_FILE", "/app/data/de421.bsp")
+ts = load.timescale()
+
+def get_ephemeris():
+    """Load ephemeris from disk (no network download)"""
+    return load(EPH_PATH)
+
+def get_observer(lat: float, lon: float, elevation_m: float = 0.0):
+    """
+    Build a Skyfield geographic position using the modern API.
+    lat, lon in decimal degrees; east/north positive.
+    """
+    return wgs84.latlon(latitude_degrees=lat, longitude_degrees=lon, elevation_m=elevation_m)
+
+def sunrise_sunset_local(date_yyyy_mm_dd: str, lat: float, lon: float, tz_name: str):
+    """
+    Returns (sunrise_local_iso, sunset_local_iso) strings.
+    Handles the civil-twilight refraction by using almanac.sunrise_sunset().
+    """
+    eph = get_ephemeris()
+    tz = zoneinfo.ZoneInfo(tz_name)
+
+    # Build time window: local calendar day → UTC boundaries
+    day_start_local = datetime.fromisoformat(f"{date_yyyy_mm_dd}T00:00:00").replace(tzinfo=tz)
+    day_end_local   = day_start_local.replace(hour=23, minute=59, second=59)
+
+    t0 = ts.from_datetime(day_start_local.astimezone(timezone.utc))
+    t1 = ts.from_datetime(day_end_local.astimezone(timezone.utc))
+
+    topos = get_observer(lat, lon)
+    f = almanac.sunrise_sunset(eph, topos)
+    times, events = almanac.find_discrete(t0, t1, f)
+
+    sunrise_utc = None
+    sunset_utc = None
+    for t, ev in zip(times, events):
+        if ev == 1 and sunrise_utc is None:
+            sunrise_utc = t.utc_datetime().replace(tzinfo=timezone.utc)
+        elif ev == 0 and sunset_utc is None:
+            sunset_utc = t.utc_datetime().replace(tzinfo=timezone.utc)
+
+    sunrise_local = sunrise_utc.astimezone(tz).isoformat() if sunrise_utc else None
+    sunset_local  = sunset_utc.astimezone(tz).isoformat() if sunset_utc else None
+    return sunrise_local, sunset_local
+
+def sun_moon_ecliptic_longitudes(dt: datetime, lat: float, lon: float):
+    """Get sun and moon ecliptic longitudes for tithi/nakshatra calculations"""
+    eph = get_ephemeris()
+    t = ts.from_datetime(dt.astimezone(timezone.utc))
+    # Use geocentric longitudes (observer not needed here)
+    e = eph['earth']
+    sun = e.at(t).observe(eph['sun']).apparent().ecliptic_latlon()[1].degrees % 360.0
+    moon = e.at(t).observe(eph['moon']).apparent().ecliptic_latlon()[1].degrees % 360.0
+    return sun, moon
 
 
 class AstronomyEngine:
@@ -125,46 +183,20 @@ class AstronomyEngine:
             
         Returns:
             Tuple of (sunrise_time, sunset_time) as datetime objects
-            
-        Formula:
-            - Solve for altitude = -0.833° (standard sunrise/sunset altitude)
-            - Account for atmospheric refraction
-            - Convert to local timezone
         """
-        ts = self.get_timescale()
-        timezone = pytz.timezone(tz)
+        # Use the new modern helper function
+        sunrise_iso, sunset_iso = sunrise_sunset_local(date_obj.isoformat(), lat, lon, tz)
         
-        # Create location
-        location = Topos(lat, lon)
-        
-        # Get sun
-        sun = self.eph['sun']
-        earth = self.eph['earth']
-        
-        # Start with approximate times (6 AM and 6 PM local time)
-        base_date = datetime.combine(date_obj, datetime.min.time())
-        local_base = timezone.localize(base_date)
-        
-        # Convert to UTC for Skyfield
-        utc_base = local_base.astimezone(pytz.UTC)
-        
-        # Calculate sunrise (altitude = -0.833°)
-        sunrise_utc = self._find_sun_event(
-            utc_base, location, sun, earth, ts, 
-            target_altitude=-0.833, is_sunrise=True
-        )
-        
-        # Calculate sunset (altitude = -0.833°)
-        sunset_utc = self._find_sun_event(
-            utc_base, location, sun, earth, ts,
-            target_altitude=-0.833, is_sunrise=False
-        )
-        
-        # Convert back to local time
-        sunrise_local = sunrise_utc.astimezone(timezone)
-        sunset_local = sunset_utc.astimezone(timezone)
-        
-        return sunrise_local, sunset_local
+        if sunrise_iso and sunset_iso:
+            # Convert ISO strings back to datetime objects
+            sunrise_dt = datetime.fromisoformat(sunrise_iso.replace('Z', '+00:00'))
+            sunset_dt = datetime.fromisoformat(sunset_iso.replace('Z', '+00:00'))
+            return sunrise_dt, sunset_dt
+        else:
+            # Fallback to approximate times if calculation fails
+            tz_obj = zoneinfo.ZoneInfo(tz)
+            base_date = datetime.combine(date_obj, datetime.min.time()).replace(tzinfo=tz_obj)
+            return base_date.replace(hour=6), base_date.replace(hour=18)
     
     def _find_sun_event(self, base_time: datetime, location: Topos, 
                        sun, earth, ts: Time, target_altitude: float, 

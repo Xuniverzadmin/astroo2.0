@@ -10,7 +10,7 @@ from datetime import datetime, date, timedelta
 from typing import Dict, List, Tuple, Optional, Any
 import pytz
 
-from .astronomy import get_sun_longitude, get_moon_longitude, get_sunrise_sunset
+from .astronomy import get_sun_longitude, get_moon_longitude, get_sunrise_sunset, sunrise_sunset_local, sun_moon_ecliptic_longitudes
 
 
 # Constants for panchangam calculations
@@ -389,13 +389,13 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
     if settings is None:
         settings = {}
     
-    # Get sunrise and sunset
-    sunrise, sunset = get_sunrise_sunset(date_obj, lat, lon, tz)
+    # Get sunrise and sunset using modern API
+    sunrise_iso, sunset_iso = sunrise_sunset_local(date_obj.isoformat(), lat, lon, tz)
     
-    # Calculate sun and moon positions at sunrise
-    sunrise_dt = sunrise.replace(tzinfo=None)
-    sun_long = get_sun_longitude(sunrise_dt)
-    moon_long = get_moon_longitude(sunrise_dt)
+    # Calculate sun and moon positions at local noon for day-level calculations
+    import zoneinfo
+    local_noon = datetime.fromisoformat(f"{date_obj.isoformat()}T12:00:00").replace(tzinfo=zoneinfo.ZoneInfo(tz))
+    sun_long, moon_long = sun_moon_ecliptic_longitudes(local_noon, lat, lon)
     
     # Calculate panchangam elements
     tithi_num, tithi_progress = compute_tithi(sun_long, moon_long)
@@ -421,8 +421,8 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
             "longitude": lon,
             "timezone": tz
         },
-        "sunrise": sunrise.isoformat(),
-        "sunset": sunset.isoformat(),
+        "sunrise": sunrise_iso,
+        "sunset": sunset_iso,
         "tithi": {
             "number": tithi_num,
             "name": tithi_name,
