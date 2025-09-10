@@ -1,10 +1,12 @@
 # backend/numerology_app/api_panchangam.py
 from fastapi import APIRouter, Query
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from astral import LocationInfo
 from astral.sun import sun
 from datetime import date, timedelta
 import pytz
+from .panchangam.core import assemble_panchangam
 
 router = APIRouter()
 
@@ -60,3 +62,22 @@ async def panchangam_today(
         yama={"start": yama_s.strftime(fmt), "end": yama_e.strftime(fmt)},
         gulika={"start": gulika_s.strftime(fmt), "end": gulika_e.strftime(fmt)},
     )
+
+@router.get("/diag/panchangam/{the_date}", response_class=PlainTextResponse)
+def diag_panchangam(
+    the_date: date,
+    lat: float = Query(13.0827),
+    lon: float = Query(80.2707),
+    tz: str = Query("Asia/Kolkata"),
+):
+    data = assemble_panchangam(the_date, lat, lon, tz, settings=None)
+    lines = [
+        f"Date: {the_date}  TZ: {tz}  LatLon: {lat},{lon}",
+        f"Sunrise: {data['sunrise']}  Sunset: {data['sunset']}",
+        f"Tithi: {data['tithi']['name']}  Start: {data['tithi']['start']}  End: {data['tithi']['end']}",
+        f"Nakshatra: {data['nakshatra']['name']}  Start: {data['nakshatra']['start']}  End: {data['nakshatra']['end']}",
+        f"Yoga: {data['yoga']['name']}  Karana: {data['karana']['name']}",
+        f"Rahu: {data['rahu_kaalam']}  Yamagandam: {data['yamagandam']}  Gulikai: {data['gulikai']}",
+        f"Nalla Neram AM: {data['nalla_neram'].get('am','-')}  PM: {data['nalla_neram'].get('pm','-')}",
+    ]
+    return "\n".join(lines)
