@@ -84,14 +84,14 @@ localhost, 127.0.0.1 {
   # Static assets (minimal caching in development)
   @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
   handle @static {
-    reverse_proxy frontend:5173
+    reverse_proxy frontend:80
     header Cache-Control "public, max-age=300"  # 5 minutes in development
     header Vary "Accept-Encoding"
   }
 
   # Frontend routes - serve static files
   handle {
-    reverse_proxy frontend:5173 {
+    reverse_proxy frontend:80 {
       health_uri /
       health_interval 30s
       health_timeout 5s

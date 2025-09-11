@@ -8,9 +8,10 @@
       PYTHONUNBUFFERED: "1"
       # Build the URL from env vars (quoted is safer due to colons)
       DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
-      REDIS_URL: ${REDIS_URL}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      LLM_API_KEY: ${OPENAI_API_KEY}
+      # fallbacks prevent WARN lines when running locally without all keys
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://astrooverz.com,https://www.astrooverz.com,http://localhost:5173}
+      LLM_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
       redis:
         condition: service_healthy
@@ -30,7 +31,7 @@
       context: .
       dockerfile: frontend/dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL}
+        VITE_API_URL: ${VITE_API_URL:-http://backend:8000}
     restart: unless-stopped
     networks: [web]
 
@@ -87,15 +88,16 @@
     restart: unless-stopped
     networks: [web]
 
-  # Prerenderer for dynamic rendering for bots
+  # Optional prerender service. Use a profile so it won't pull unless you ask for it.
   prerender:
-    image: prerender/prerender:6.8.1
+    image: prerender/prerender:latest
     restart: unless-stopped
     environment:
       - PRERENDER_NUM_WORKERS=2
       - PRERENDER_PAGE_DONE_CHECK_TIMEOUT=12000
       - PRERENDER_JS_TIMEOUT=20000
     networks: [web]
+    profiles: ["prerender"]
 
 volumes:
   caddydata:
