@@ -1,12 +1,16 @@
-import { useNavigate } from "react-router-dom";
-
 export default function GetStartedCTA() {
-  const nav = useNavigate();
+  console.log("GetStartedCTA: Component rendering");
+  
+  const handleClick = () => {
+    console.log("GetStartedCTA: Button clicked, navigating to onboarding");
+    // Use hash-based navigation to match the app's routing system
+    window.location.hash = "onboarding";
+  };
   
   return (
     <button
       className="btn btn-accent"
-      onClick={() => nav("/onboarding")}
+      onClick={handleClick}
     >
       Get Started
     </button>
