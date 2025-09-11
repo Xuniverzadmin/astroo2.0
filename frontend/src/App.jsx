@@ -8,8 +8,10 @@ function App() {
   return (
     <AuthProvider>
       <ChatProvider>
-        <div className="App">
-          <ChatPanel />
+        <div className="w-full min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 to-indigo-900">
+          <div className="w-full max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto px-2 py-6">
+            <ChatPanel />
+          </div>
           <Toaster
             position="top-right"
             toastOptions={{
