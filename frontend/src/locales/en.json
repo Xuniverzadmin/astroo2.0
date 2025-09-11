@@ -92,7 +92,11 @@
     "no_data": "No data available",
     "no_results": "No results found",
     "try_again": "Please try again",
-    "contact_support": "Contact support if the problem persists"
+    "contact_support": "Contact support if the problem persists",
+    "quick_actions": "Quick Actions",
+    "click_to_explore": "Click to explore Vedic astrology features",
+    "sign_in_to_access": "Sign in to access all features and save your data",
+    "add_profile_first": "Add a profile to access birth chart and Dasha features"
   },
   "panchangam": {
     "title": "Panchangam",
@@ -260,5 +264,20 @@
     "health": "Health",
     "finance": "Finance",
     "spirituality": "Spirituality"
+  },
+  "auth": {
+    "welcome": "Welcome to Astrooverz",
+    "sign_in": "Sign In",
+    "create_account": "Create Account",
+    "welcome_back": "Welcome back!",
+    "email": "Email",
+    "password": "Password",
+    "creating": "Creating Account...",
+    "signing_in": "Signing In...",
+    "already_have_account": "Already have an account? Sign in",
+    "need_account": "Need an account? Sign up",
+    "continue_as_guest": "Continue as Guest",
+    "guest_user": "Guest User",
+    "sign_out": "Sign Out"
   }
 }
