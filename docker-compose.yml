@@ -43,7 +43,7 @@
     image: caddy:2
     ports: ["80:80", "443:443"]
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile #no :ro
       - caddydata:/data
       - caddyconfig:/config
     depends_on: [backend, frontend]
