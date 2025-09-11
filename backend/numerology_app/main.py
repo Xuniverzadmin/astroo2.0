@@ -26,7 +26,7 @@ app = FastAPI(title="Astrooverz API")
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://astrooverz.com", "https://www.astrooverz.com", "http://localhost", "http://127.0.0.1"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,

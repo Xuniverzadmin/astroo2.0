@@ -10,13 +10,17 @@
       DATABASE_URL: "postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
       # fallbacks prevent WARN lines when running locally without all keys
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://astrooverz.com,https://www.astrooverz.com,http://localhost:5173}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://astrooverz.com","https://www.astrooverz.com","http://localhost:5173"]}
       LLM_API_KEY: ${OPENAI_API_KEY:-}
     depends_on:
       redis:
         condition: service_healthy
       db:
         condition: service_healthy
+    command: >
+      uvicorn numerology_app.main:app --host 0.0.0.0 --port 8000
+    expose:
+      - "8000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 30s

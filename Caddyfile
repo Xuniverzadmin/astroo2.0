@@ -1,104 +1,64 @@
-﻿# Production configuration
+﻿{
+  email admin1@xuniverz.com
+}
+
 astrooverz.com, www.astrooverz.com {
-    encode zstd gzip
+  encode zstd gzip
 
-    # 1) API (always first)
-    @api path /api/* /api/healthz /healthz
-    reverse_proxy @api backend:8000
-
-    # 2) Good crawlers get pre-rendered HTML (prerenderer temporarily disabled)
-    # @goodbots header_regexp UA User-Agent (?i)(Googlebot|Bingbot|Applebot|DuckDuckBot|GPTBot)
-    # reverse_proxy @goodbots prerender:3000
-
-    # 3) Everyone else gets the SPA
-    reverse_proxy frontend:80
-
-    header {
-        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "SAMEORIGIN"
-        Referrer-Policy "strict-origin-when-cross-origin"
+  @api path /api* /health /healthz
+  handle @api {
+    reverse_proxy backend:8000 {
+      health_uri /healthz
+      health_interval 30s
     }
+  }
+
+  # all other requests hit the frontend
+  handle {
+    reverse_proxy frontend:80
+  }
+}
+
+api.astrooverz.com {
+  encode zstd gzip
+  reverse_proxy backend:8000 {
+    health_uri /healthz
+    health_interval 30s
+  }
 }
 
 # Local development configuration
 localhost, 127.0.0.1 {
-    encode zstd gzip
-
-    @api path /api/* /healthz /api/healthz
-    reverse_proxy @api backend:8000
-
-    # If frontend is its own container
-    reverse_proxy frontend:80
-
-    # Optional: security headers
-    header {
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "SAMEORIGIN"
-        Referrer-Policy "strict-origin-when-cross-origin"
-    }
-}
-
-# Development configuration
-:80, :443 {
-  # Enable compression
   encode zstd gzip
 
-  # Security headers (relaxed for development)
-  header {
-    X-Content-Type-Options "nosniff"
-    X-Frame-Options "SAMEORIGIN"
-    Referrer-Policy "strict-origin-when-cross-origin"
-    
-    # Remove server information
-    -Server
-  }
-
-  # API routes - proxy to backend
-  @api path /api/*
+  @api path /api* /health /healthz
   handle @api {
-    # Add CORS headers for API
-    header Access-Control-Allow-Origin "*"
-    header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    header Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
-    
-    # Handle preflight requests
-    @options method OPTIONS
-    handle @options {
-      respond "" 200
-    }
-    
-    # Proxy to backend
     reverse_proxy backend:8000 {
       health_uri /healthz
       health_interval 30s
-      health_timeout 5s
     }
-    
-    # API-specific headers (no caching in development)
-    header Cache-Control "no-cache, no-store, must-revalidate"
-    header Pragma "no-cache"
-    header Expires "0"
   }
 
-  # Static assets (minimal caching in development)
-  @static path *.css *.js *.png *.jpg *.jpeg *.gif *.ico *.svg *.woff *.woff2 *.ttf *.eot
-  handle @static {
-    reverse_proxy frontend:80
-    header Cache-Control "public, max-age=300"  # 5 minutes in development
-    header Vary "Accept-Encoding"
-  }
-
-  # Frontend routes - serve static files
+  # all other requests hit the frontend
   handle {
-    reverse_proxy frontend:80 {
-      health_uri /
+    reverse_proxy frontend:80
+  }
+}
+
+# Development configuration (fallback)
+:80, :443 {
+  encode zstd gzip
+
+  @api path /api* /health /healthz
+  handle @api {
+    reverse_proxy backend:8000 {
+      health_uri /healthz
       health_interval 30s
-      health_timeout 5s
     }
-    
-    # Frontend caching (minimal in development)
-    header Cache-Control "public, max-age=60"  # 1 minute in development
-    header Vary "Accept-Encoding"
+  }
+
+  # all other requests hit the frontend
+  handle {
+    reverse_proxy frontend:80
   }
 }

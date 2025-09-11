@@ -6,7 +6,9 @@ and other application components.
 """
 
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import Optional
+import json
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -31,6 +33,18 @@ class Settings(BaseSettings):
     
     # CORS settings
     BACKEND_CORS_ORIGINS: list[str] = ["*"]
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    def parse_cors(cls, v):
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            s = v.strip()
+            try:
+                return json.loads(s)
+            except Exception:
+                return [x.strip() for x in s.split(",") if x.strip()]
+        return []
     
     # Job scheduling configuration
     SCHED_ENABLED: bool = False
