@@ -10,10 +10,10 @@ import toast from 'react-hot-toast';
 import QuickActions from './QuickActions';
 import AuthModal from './AuthModal';
 import ProfileMenu from './ProfileMenu';
-import PanchangamWidget from './PanchangamWidget';
-import BirthChartView from './BirthChartView';
-import DashaTimeline from './DashaTimeline';
-import RemindersDashboard from './RemindersDashboard';
+import PanchangamWidgetStub from './PanchangamWidgetStub';
+import ChartWidget from './ChartWidget';
+import DashaWidget from './DashaWidget';
+import RemindersWidget from './RemindersWidget';
 import ProfileForm from './ProfileForm';
 
 const ChatPanel = () => {
@@ -94,13 +94,13 @@ const ChatPanel = () => {
   const getWidgetComponent = (widgetType, data) => {
     switch (widgetType) {
       case 'panchangam':
-        return <PanchangamWidget {...data} onClose={() => closeWidget('panchangam')} />;
+        return <PanchangamWidgetStub data={data} onClose={() => closeWidget('panchangam')} />;
       case 'birthchart':
-        return <BirthChartView {...data} onClose={() => closeWidget('birthchart')} />;
+        return <ChartWidget data={data} onClose={() => closeWidget('birthchart')} />;
       case 'dasha':
-        return <DashaTimeline {...data} onClose={() => closeWidget('dasha')} />;
+        return <DashaWidget data={data} onClose={() => closeWidget('dasha')} />;
       case 'reminders':
-        return <RemindersDashboard {...data} onClose={() => closeWidget('reminders')} />;
+        return <RemindersWidget data={data} onClose={() => closeWidget('reminders')} />;
       case 'profile':
         return <ProfileForm onClose={() => closeWidget('profile')} />;
       default:
@@ -109,11 +109,7 @@ const ChatPanel = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDarkMode 
-        ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950' 
-        : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
-    }`}>
+    <div className="w-full h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 to-indigo-900">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
         <motion.div
