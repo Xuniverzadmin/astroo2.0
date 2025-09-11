@@ -35,7 +35,7 @@ export async function checkHealth() {
 }
 
 export async function login(email, password) {
-  return apiJSON("/auth/login", {
+  return apiJSON("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
