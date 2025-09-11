@@ -3,7 +3,6 @@ import { AuthProvider } from './context/AuthContext';
 import { ChatProvider } from './context/ChatContext';
 import ChatPanel from './components/ChatPanel';
 import { Toaster } from 'react-hot-toast';
-import './App.css';
 
 function App() {
   return (
