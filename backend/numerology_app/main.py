@@ -19,6 +19,10 @@ from .api_calendar import router as calendar_router
 from .api_billing import router as billing_router
 from .api_panchangam import router as panchangam_router
 from .api_quick_reading import router as quick_reading_router
+from .api_birth_chart import router as birth_chart_router
+from .api_dasha import router as dasha_router
+from .api_events import router as events_router
+from .api_interpretation import router as interpretation_router
 
 
 app = FastAPI(title="Astrooverz API")
@@ -79,6 +83,10 @@ for router in (
     billing_router,
     panchangam_router,
     quick_reading_router,
+    birth_chart_router,
+    dasha_router,
+    events_router,
+    interpretation_router,
 ):
     app.include_router(router, prefix="/api")
 

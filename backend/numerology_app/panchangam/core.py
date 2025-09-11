@@ -6,11 +6,14 @@ including tithi, nakshatra, yoga, karana, and other astrological timings.
 """
 
 import math
+import logging
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Tuple, Optional, Any
 import pytz
 
 from .astronomy import get_sun_longitude, get_moon_longitude, get_sunrise_sunset, sunrise_sunset_local, sun_moon_ecliptic_longitudes
+
+logger = logging.getLogger(__name__)
 
 
 # Constants for panchangam calculations
@@ -366,7 +369,7 @@ def compute_gowri_nalla(date_obj: date, lat: float, lon: float, tz: str) -> Dict
 def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str, 
                        settings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Assemble complete panchangam for a given date and location.
+    Assemble complete panchangam for a given date and location using Swiss Ephemeris.
     
     Args:
         date_obj: Date for calculation
@@ -376,15 +379,106 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
         settings: Optional settings dictionary
         
     Returns:
-        Complete panchangam dictionary with all calculated elements
+        Complete panchangam dictionary with all calculated elements using authentic Vedic calculations
         
-    Formula:
-        Combines all panchangam elements:
-        - Tithi, Nakshatra, Yoga, Karana
-        - Sunrise/Sunset times
-        - Rahu Kalam, Yama Gandam, Gulikai Kalam
-        - Hora periods
-        - Gowri Panchangam
+    Uses Swiss Ephemeris-based panchangam library for accurate calculations.
+    """
+    if settings is None:
+        settings = {}
+    
+    try:
+        # Import the authentic pyswisseph-based panchangam library
+        from ..vedic_panchangam import Panchangam, City
+        
+        # Convert date to proper format if needed
+        if isinstance(date_obj, str):
+            date_obj = date.fromisoformat(date_obj)
+        
+        # Create city object for the location
+        city = City(name="UserLocation", latitude=lat, longitude=lon, timezone=tz)
+        
+        # Create and compute panchangam using Swiss Ephemeris
+        panch = Panchangam(city, date_obj)
+        panch.compute()
+        
+        # Extract core values from the authentic library
+        tithi = panch.tithi
+        nakshatra = panch.nakshatra
+        yoga = panch.yoga
+        karana = panch.karana
+        sunrise = panch.sunrise
+        sunset = panch.sunset
+        
+        # Calculate timing elements using existing functions (these are still accurate)
+        rahu_yama_gulikai = compute_rahu_yama_gulikai(date_obj, lat, lon, tz)
+        horas = compute_hora(date_obj, lat, lon, tz)
+        gowri = compute_gowri_nalla(date_obj, lat, lon, tz)
+        
+        # Assemble API response with authentic Swiss Ephemeris calculations
+        result = {
+            "date": date_obj.isoformat(),
+            "location": {
+                "latitude": lat,
+                "longitude": lon,
+                "timezone": tz
+            },
+            "sunrise": sunrise.strftime('%Y-%m-%dT%H:%M:%S') if sunrise else None,
+            "sunset": sunset.strftime('%Y-%m-%dT%H:%M:%S') if sunset else None,
+            "tithi": {
+                "number": tithi.index if hasattr(tithi, 'index') else 1,
+                "name": tithi.name_english if hasattr(tithi, 'name_english') else "Unknown",
+                "progress": tithi.elapsed_percentage if hasattr(tithi, 'elapsed_percentage') else 0.0,
+                "percentage": round(tithi.elapsed_percentage * 100, 2) if hasattr(tithi, 'elapsed_percentage') else 0.0
+            },
+            "nakshatra": {
+                "number": nakshatra.index if hasattr(nakshatra, 'index') else 1,
+                "name": nakshatra.name_english if hasattr(nakshatra, 'name_english') else "Unknown",
+                "progress": nakshatra.elapsed_percentage if hasattr(nakshatra, 'elapsed_percentage') else 0.0,
+                "percentage": round(nakshatra.elapsed_percentage * 100, 2) if hasattr(nakshatra, 'elapsed_percentage') else 0.0
+            },
+            "yoga": {
+                "number": yoga.index if hasattr(yoga, 'index') else 1,
+                "name": yoga.name_english if hasattr(yoga, 'name_english') else "Unknown",
+                "progress": yoga.elapsed_percentage if hasattr(yoga, 'elapsed_percentage') else 0.0,
+                "percentage": round(yoga.elapsed_percentage * 100, 2) if hasattr(yoga, 'elapsed_percentage') else 0.0
+            },
+            "karana": {
+                "name": karana.name_english if hasattr(karana, 'name_english') else "Unknown",
+                "progress": karana.elapsed_percentage if hasattr(karana, 'elapsed_percentage') else 0.0,
+                "percentage": round(karana.elapsed_percentage * 100, 2) if hasattr(karana, 'elapsed_percentage') else 0.0
+            },
+            "rahu_kalam": rahu_yama_gulikai["rahu_kalam"],
+            "yama_gandam": rahu_yama_gulikai["yama_gandam"],
+            "gulikai_kalam": rahu_yama_gulikai["gulikai_kalam"],
+            "horas": [
+                {
+                    "hora_number": h["hora_number"],
+                    "planet": h["planet"],
+                    "start": h["start"].isoformat(),
+                    "end": h["end"].isoformat()
+                }
+                for h in horas
+            ],
+            "gowri_panchangam": gowri,
+            "settings": settings
+        }
+        
+        return result
+        
+    except ImportError:
+        # Fallback to original calculation if pyswisseph library is not available
+        logger.warning("pyswisseph library not available, falling back to original calculations")
+        return _assemble_panchangam_fallback(date_obj, lat, lon, tz, settings)
+    except Exception as e:
+        # Fallback to original calculation on any error
+        logger.error(f"Error in authentic pyswisseph panchangam calculation: {e}, falling back to original")
+        return _assemble_panchangam_fallback(date_obj, lat, lon, tz, settings)
+
+
+def _assemble_panchangam_fallback(date_obj: date, lat: float, lon: float, tz: str, 
+                                 settings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """
+    Fallback panchangam calculation using original methods.
     """
     if settings is None:
         settings = {}

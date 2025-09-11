@@ -335,9 +335,21 @@ async def get_panchangam_by_date(
     """
     try:
         logger.info(f"Calculating panchangam for {date} at ({lat}, {lon}) in {tz}")
-        return assemble_panchangam(date, lat, lon, tz, settings=None)
+        
+        # DEBUG: Check what assemble_panchangam returns
+        result = assemble_panchangam(date, lat, lon, tz, settings=None)
+        logger.info(f"Panchangam result type: {type(result)}")
+        logger.info(f"Panchangam result: {result}")
+        
+        if not result:
+            logger.error(f"assemble_panchangam returned None/empty for {date}")
+            raise HTTPException(status_code=404, detail="Panchangam data not available")
+        
+        return result
     except Exception as e:
         logger.error(f"Error calculating panchangam for {date}: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
