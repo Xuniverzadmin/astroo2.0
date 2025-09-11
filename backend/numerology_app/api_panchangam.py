@@ -1,6 +1,6 @@
 # backend/numerology_app/api_panchangam.py
-from fastapi import APIRouter, Query
-from fastapi.responses import PlainTextResponse
+from fastapi import APIRouter, Query, Path, HTTPException
+from fastapi.responses import PlainTextResponse, JSONResponse
 from pydantic import BaseModel
 from astral import LocationInfo
 from astral.sun import sun
@@ -88,3 +88,32 @@ def diag_panchangam(
     except Exception:
         import traceback
         return "ERROR\n" + traceback.format_exc()
+
+
+@router.get("/api/panchangam/{the_date}", response_class=JSONResponse)
+async def panchangam_by_date(
+    the_date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
+    lat: float = Query(..., ge=-90, le=90, description="Latitude in degrees"),
+    lon: float = Query(..., ge=-180, le=180, description="Longitude in degrees"),
+    tz: str = Query("Asia/Kolkata", description="Timezone string"),
+):
+    """
+    Returns Panchangam for any date in standard JSON for frontend use.
+    This is the stable, production-grade route that always returns valid JSON.
+    """
+    try:
+        # Try your real calculation
+        result = assemble_panchangam(the_date, lat, lon, tz, settings=None)
+        if not result:
+            raise HTTPException(status_code=404, detail="Panchangam not found")
+        return result
+    except Exception as e:
+        # Always return a JSON error, never crash the app
+        import traceback
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": f"Error generating panchangam for {the_date}: {str(e)}",
+                "trace": traceback.format_exc()
+            }
+        )
