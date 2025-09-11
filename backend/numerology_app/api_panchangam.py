@@ -90,7 +90,7 @@ def diag_panchangam(
         return "ERROR\n" + traceback.format_exc()
 
 
-@router.get("/api/panchangam/{the_date}", response_class=JSONResponse)
+@router.get("/panchangam/{the_date}", response_class=JSONResponse)
 async def panchangam_by_date(
     the_date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
     lat: float = Query(..., ge=-90, le=90, description="Latitude in degrees"),
