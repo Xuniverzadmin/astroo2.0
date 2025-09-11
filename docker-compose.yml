@@ -35,7 +35,7 @@
       context: .
       dockerfile: frontend/dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://backend:8000}
+        VITE_API_URL: ${VITE_API_URL:-https://api.astrooverz.com}
     restart: unless-stopped
     networks: [web]
 
