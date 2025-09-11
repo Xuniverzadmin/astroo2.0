@@ -37,31 +37,41 @@ def window_for(sunrise, sunset, slot_pair):
     end   = sunrise + timedelta(seconds=(e_idx-1)*slot_len)
     return start, end
 
-@router.get("/panchangam/today", response_model=Panchangam)
-async def panchangam_today(
-    lat: float = Query(...), lon: float = Query(...),
+@router.get("/panchangam/{target_date}", response_model=Panchangam)
+async def panchangam_for_date(
+    target_date: date,
+    lat: float = Query(...), 
+    lon: float = Query(...),
     tz: str = Query("Asia/Kolkata")
 ):
+    """Get panchangam for a specific date with location and timezone."""
     tzinfo = pytz.timezone(tz)
     loc = LocationInfo(latitude=lat, longitude=lon, timezone=tz)
-    today = date.today()
-    sdict = sun(loc.observer, date=today, tzinfo=tzinfo)
+    sdict = sun(loc.observer, date=target_date, tzinfo=tzinfo)
     sr, ss = sdict["sunrise"], sdict["sunset"]
 
-    wd = today.weekday()  # Monday=0..Sunday=6
+    wd = target_date.weekday()  # Monday=0..Sunday=6
     rahu_s, rahu_e     = window_for(sr, ss, RAHU_FRAC[wd])
     yama_s, yama_e     = window_for(sr, ss, YAMA_FRAC[wd])
     gulika_s, gulika_e = window_for(sr, ss, GULIKA_FRAC[wd])
 
     fmt = "%H:%M"
     return Panchangam(
-        date=str(today),
+        date=str(target_date),
         sunrise=sr.strftime(fmt),
         sunset=ss.strftime(fmt),
         rahu={"start": rahu_s.strftime(fmt), "end": rahu_e.strftime(fmt)},
         yama={"start": yama_s.strftime(fmt), "end": yama_e.strftime(fmt)},
         gulika={"start": gulika_s.strftime(fmt), "end": gulika_e.strftime(fmt)},
     )
+
+@router.get("/panchangam/today", response_model=Panchangam)
+async def panchangam_today(
+    lat: float = Query(...), lon: float = Query(...),
+    tz: str = Query("Asia/Kolkata")
+):
+    """Get panchangam for today - convenience endpoint."""
+    return await panchangam_for_date(date.today(), lat, lon, tz)
 
 @router.get("/diag/panchangam/{the_date}", response_class=PlainTextResponse)
 def diag_panchangam(
