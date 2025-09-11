@@ -15,6 +15,131 @@ class Item(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class Profile(Base):
+    """User profile for birth chart calculations."""
+    __tablename__ = "profiles"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    birth_date: Mapped[date] = mapped_column(Date, nullable=False)
+    birth_time: Mapped[str] = mapped_column(String(10), nullable=False)  # HH:MM format
+    birth_place: Mapped[str] = mapped_column(String(200), nullable=False)
+    latitude: Mapped[float] = mapped_column(Float, nullable=False)
+    longitude: Mapped[float] = mapped_column(Float, nullable=False)
+    timezone: Mapped[str] = mapped_column(String(50), default="Asia/Kolkata")
+    gender: Mapped[str | None] = mapped_column(String(10), default=None)
+    notes: Mapped[str | None] = mapped_column(Text, default=None)
+    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), default=None)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    birth_charts: Mapped[list["BirthChart"]] = relationship("BirthChart", back_populates="profile")
+    dasha_timelines: Mapped[list["DashaTimeline"]] = relationship("DashaTimeline", back_populates="profile")
+    readings: Mapped[list["Reading"]] = relationship("Reading", back_populates="profile")
+
+
+class BirthChart(Base):
+    """Stored birth chart calculations."""
+    __tablename__ = "birth_charts"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    profile_id: Mapped[int] = mapped_column(Integer, ForeignKey("profiles.id"), nullable=False)
+    chart_data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
+    ascendant: Mapped[str] = mapped_column(String(20), nullable=False)
+    moon_sign: Mapped[str] = mapped_column(String(20), nullable=False)
+    sun_sign: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    profile: Mapped["Profile"] = relationship("Profile", back_populates="birth_charts")
+
+
+class DashaTimeline(Base):
+    """Stored dasha timeline calculations."""
+    __tablename__ = "dasha_timelines"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    profile_id: Mapped[int] = mapped_column(Integer, ForeignKey("profiles.id"), nullable=False)
+    timeline_data: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)
+    current_dasha: Mapped[str] = mapped_column(String(20), nullable=False)
+    current_antardasha: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    profile: Mapped["Profile"] = relationship("Profile", back_populates="dasha_timelines")
+
+
+class Reading(Base):
+    """AI-generated readings and interpretations."""
+    __tablename__ = "readings"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    profile_id: Mapped[int] = mapped_column(Integer, ForeignKey("profiles.id"), nullable=False)
+    reading_type: Mapped[str] = mapped_column(String(50), nullable=False)  # general, career, love, etc.
+    language: Mapped[str] = mapped_column(String(10), default="en")
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    detailed_analysis: Mapped[str] = mapped_column(Text, nullable=False)
+    strengths: Mapped[list[str]] = mapped_column(JSON, default=list)
+    challenges: Mapped[list[str]] = mapped_column(JSON, default=list)
+    recommendations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    predictions: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    profile: Mapped["Profile"] = relationship("Profile", back_populates="readings")
+
+
+class Event(Base):
+    """Astrological events and reminders."""
+    __tablename__ = "events"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, default=None)
+    event_date: Mapped[date] = mapped_column(Date, nullable=False)
+    event_time: Mapped[str | None] = mapped_column(String(10), default=None)  # HH:MM format
+    event_type: Mapped[str] = mapped_column(String(20), nullable=False)  # auspicious, inauspicious, neutral
+    significance: Mapped[str] = mapped_column(Text, nullable=False)
+    recommendations: Mapped[list[str]] = mapped_column(JSON, default=list)
+    related_planets: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Reminder(Base):
+    """User reminders for astrological events."""
+    __tablename__ = "reminders"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), default=None)
+    event_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("events.id"), default=None)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    reminder_time: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
+    notification_type: Mapped[str] = mapped_column(String(20), default="email")  # email, sms, push
+    is_sent: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class UserPreferences(Base):
+    """User personalization settings."""
+    __tablename__ = "user_preferences"
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    language: Mapped[str] = mapped_column(String(10), default="en")
+    timezone: Mapped[str] = mapped_column(String(50), default="Asia/Kolkata")
+    calculation_method: Mapped[str] = mapped_column(String(20), default="Lahiri")
+    chart_style: Mapped[str] = mapped_column(String(20), default="North Indian")
+    show_degrees: Mapped[bool] = mapped_column(Boolean, default=True)
+    show_nakshatras: Mapped[bool] = mapped_column(Boolean, default=True)
+    show_divisions: Mapped[bool] = mapped_column(Boolean, default=False)
+    notification_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    email_notifications: Mapped[bool] = mapped_column(Boolean, default=True)
+    sms_notifications: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 class PanchangDay(Base):
     """
     Model for storing daily panchangam data.
