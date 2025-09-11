@@ -152,7 +152,7 @@ const ChatPanel = () => {
       <div className="flex flex-col items-center justify-center px-4 pb-20">
         <motion.div
           layout
-          className={`w-full max-w-4xl rounded-2xl shadow-2xl p-6 ${
+          className={`w-full max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl rounded-2xl shadow-2xl p-6 ${
             isDarkMode 
               ? 'bg-slate-900/80 backdrop-blur-sm border border-slate-800' 
               : 'bg-white/80 backdrop-blur-sm border border-gray-200'
@@ -289,7 +289,7 @@ const ChatPanel = () => {
               initial={{ y: 20 }}
               animate={{ y: 0 }}
               exit={{ y: 20 }}
-              className={`w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl ${
+              className={`w-full max-w-lg md:max-w-2xl lg:max-w-4xl xl:max-w-6xl max-h-[90vh] overflow-y-auto rounded-2xl ${
                 isDarkMode ? 'bg-slate-900' : 'bg-white'
               }`}
             >
