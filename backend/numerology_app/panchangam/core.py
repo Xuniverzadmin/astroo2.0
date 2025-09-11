@@ -387,8 +387,8 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
         settings = {}
     
     try:
-        # Import the authentic panchangam library
-        from panchangam import Panchangam, City
+        # Import the authentic pyswisseph-based panchangam library
+        from ..vedic_panchangam import Panchangam, City
         
         # Convert date to proper format if needed
         if isinstance(date_obj, str):
@@ -397,7 +397,7 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
         # Create city object for the location
         city = City(name="UserLocation", latitude=lat, longitude=lon, timezone=tz)
         
-        # Create and compute panchangam
+        # Create and compute panchangam using Swiss Ephemeris
         panch = Panchangam(city, date_obj)
         panch.compute()
         
@@ -414,7 +414,7 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
         horas = compute_hora(date_obj, lat, lon, tz)
         gowri = compute_gowri_nalla(date_obj, lat, lon, tz)
         
-        # Assemble API response with authentic calculations
+        # Assemble API response with authentic Swiss Ephemeris calculations
         result = {
             "date": date_obj.isoformat(),
             "location": {
@@ -422,8 +422,8 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
                 "longitude": lon,
                 "timezone": tz
             },
-            "sunrise": sunrise.strftime('%Y-%m-%dT%H:%M:%S.%f%z') if sunrise else None,
-            "sunset": sunset.strftime('%Y-%m-%dT%H:%M:%S.%f%z') if sunset else None,
+            "sunrise": sunrise.strftime('%Y-%m-%dT%H:%M:%S') if sunrise else None,
+            "sunset": sunset.strftime('%Y-%m-%dT%H:%M:%S') if sunset else None,
             "tithi": {
                 "number": tithi.index if hasattr(tithi, 'index') else 1,
                 "name": tithi.name_english if hasattr(tithi, 'name_english') else "Unknown",
@@ -466,12 +466,12 @@ def assemble_panchangam(date_obj: date, lat: float, lon: float, tz: str,
         return result
         
     except ImportError:
-        # Fallback to original calculation if panchangam library is not available
-        logger.warning("panchangam library not available, falling back to original calculations")
+        # Fallback to original calculation if pyswisseph library is not available
+        logger.warning("pyswisseph library not available, falling back to original calculations")
         return _assemble_panchangam_fallback(date_obj, lat, lon, tz, settings)
     except Exception as e:
         # Fallback to original calculation on any error
-        logger.error(f"Error in authentic panchangam calculation: {e}, falling back to original")
+        logger.error(f"Error in authentic pyswisseph panchangam calculation: {e}, falling back to original")
         return _assemble_panchangam_fallback(date_obj, lat, lon, tz, settings)
 
 
