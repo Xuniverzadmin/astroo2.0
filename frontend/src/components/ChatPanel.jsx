@@ -101,25 +101,38 @@ export default function ChatPanel() {
   };
 
   const openWidget = (widgetType, data = {}) => {
-    setActiveWidgets(prev => ({ ...prev, [widgetType]: data }));
+    console.log('openWidget called with:', { widgetType, data });
+    setActiveWidgets(prev => {
+      const newWidgets = { ...prev, [widgetType]: data };
+      console.log('Updated activeWidgets:', newWidgets);
+      return newWidgets;
+    });
   };
 
   const handleQuickAction = (query) => {
+    console.log('handleQuickAction called with query:', query);
     // Map QuickActions queries to widget types
     if (query.includes("Panchangam")) {
+      console.log('Opening panchangam widget');
       openWidget('panchangam', { date: new Date().toISOString().split('T')[0] });
     } else if (query.includes("birth chart")) {
-      openWidget('chart', {});
+      console.log('Opening birth chart widget');
+      openWidget('birthchart', {});
     } else if (query.includes("Dasha")) {
+      console.log('Opening dasha widget');
       openWidget('dasha', {});
     } else if (query.includes("reminders")) {
+      console.log('Opening reminders widget');
       openWidget('reminders', {});
     } else if (query.includes("profile")) {
+      console.log('Opening profile widget');
       openWidget('profile', {});
     } else if (query.includes("reading")) {
+      console.log('Opening reading widget');
       openWidget('reading', {});
     } else {
       // For error messages or other queries, just send as a message
+      console.log('Setting input to:', query);
       setInput(query);
     }
   };
@@ -214,6 +227,12 @@ export default function ChatPanel() {
       {/* Quick Actions */}
       <div className="p-4 border-b border-slate-700">
         <QuickActions onQuick={handleQuickAction} />
+        {/* Debug: Show active widgets */}
+        {Object.keys(activeWidgets).length > 0 && (
+          <div className="mt-2 p-2 bg-slate-800 rounded text-xs text-gray-400">
+            Active Widgets: {Object.keys(activeWidgets).join(', ')}
+          </div>
+        )}
       </div>
 
       {/* Chat Messages */}
@@ -224,8 +243,8 @@ export default function ChatPanel() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className={`max-w-xl rounded-2xl px-4 py-3 ${m.role === "assistant"
-                ? "bg-slate-800/60 text-slate-50 self-start"
-                : "bg-indigo-600 text-white self-end ml-auto"
+              ? "bg-slate-800/60 text-slate-50 self-start"
+              : "bg-indigo-600 text-white self-end ml-auto"
               }`}
           >
             {m.content}
@@ -267,8 +286,8 @@ export default function ChatPanel() {
             <button
               onClick={handleVoiceToggle}
               className={`absolute right-2 top-2 p-2 rounded-lg transition-colors ${isRecording
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-slate-700 hover:bg-slate-600'
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-slate-700 hover:bg-slate-600'
                 }`}
             >
               {isRecording ? <MicOff size={16} className="text-white" /> : <Mic size={16} className="text-white" />}
@@ -287,11 +306,14 @@ export default function ChatPanel() {
 
       {/* Widgets */}
       <AnimatePresence>
-        {Object.entries(activeWidgets).map(([widgetType, data]) => (
-          <React.Fragment key={widgetType}>
-            {getWidgetComponent(widgetType, data)}
-          </React.Fragment>
-        ))}
+        {Object.entries(activeWidgets).map(([widgetType, data]) => {
+          console.log('Rendering widget:', { widgetType, data });
+          return (
+            <React.Fragment key={widgetType}>
+              {getWidgetComponent(widgetType, data)}
+            </React.Fragment>
+          );
+        })}
       </AnimatePresence>
 
       {/* Auth Modal */}
