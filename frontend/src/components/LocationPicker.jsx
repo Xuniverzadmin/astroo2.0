@@ -72,9 +72,17 @@ export default function LocationPicker({ value, onSelect }) {
         </ul>
       )}
 
-      {value && (
+      {value && typeof value.lat === "number" && typeof value.lon === "number" ? (
         <p className="text-xs mt-2 opacity-70">
           Current: <b>{value.label}</b> ({value.lat.toFixed(3)}, {value.lon.toFixed(3)})
+        </p>
+      ) : value ? (
+        <p className="text-xs mt-2 opacity-70">
+          Current: <b>{value.label}</b> (coordinates loading...)
+        </p>
+      ) : (
+        <p className="text-xs mt-2 opacity-70">
+          No location selected.
         </p>
       )}
     </div>

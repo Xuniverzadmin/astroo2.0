@@ -61,8 +61,11 @@ export function useLocation() {
   }, []);
 
   function setPreference(newLoc) {
-    setLocation(newLoc);
-    localStorage.setItem(LS_KEY, JSON.stringify(newLoc));
+    // Ensure the location has valid coordinates
+    if (newLoc && typeof newLoc.lat === "number" && typeof newLoc.lon === "number") {
+      setLocation(newLoc);
+      localStorage.setItem(LS_KEY, JSON.stringify(newLoc));
+    }
   }
 
   function clearPreference() {
