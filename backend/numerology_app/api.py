@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 import logging
 import os
+from .panchangam import compute_windows, format_window
 
 # --- Caching imports (with safe fallback for editors/local) ---
 try:
@@ -55,6 +56,10 @@ class MiniReadingOutput(BaseModel):
 class AskInput(BaseModel):
     question: str
     profile_id: Optional[str] = None
+    # Optional quick geo; later you can resolve from user profile
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    tz: Optional[str] = None  # default Asia/Kolkata
 
 class AskOutput(BaseModel):
     answer: str
@@ -130,17 +135,63 @@ def mini_reading(payload: MiniReadingInput):
 @cache(expire=60)  # cache short-lived answers for 1 minute
 def ask_astrooverz(payload: AskInput):
     """
-    LLM-backed answer. Keep the response as a single answer string.
+    LLM-backed answer with real Panchangam timings. Keep the response as a single answer string.
     """
-    # TODO: integrate your LLM (use env: LLM_API_KEY)
-    # For now, echo a helpful structured answer:
-    answer = (
-        "Here's a concise take:\n"
-        "• Today's energies support communication and short trips.\n"
-        "• If you're pitching, keep it between 11:00–12:00 or 15:30–16:30.\n"
-        "• One action: send a crisp status note to unblock a stakeholder."
-    )
-    return {"answer": answer}
+    q = payload.question.strip()
+    if not q:
+        return {"answer": "Please ask a question."}
+    
+    try:
+        # --- Panchangam context (defaults to Chennai if coords not provided) ---
+        lat = payload.lat if payload.lat is not None else 13.0827
+        lon = payload.lon if payload.lon is not None else 80.2707
+        tz  = payload.tz  if payload.tz  else "Asia/Kolkata"
+        w = compute_windows(date.today(), lat=lat, lon=lon, tz=tz)
+
+        # Build a concise context string
+        ctx_lines = [
+            f"Sunrise {w.sunrise.strftime('%H:%M')}, Sunset {w.sunset.strftime('%H:%M')} ({tz})",
+            f"Rahu Kalam: {format_window(w.rahu)}",
+            f"Yamaganda: {format_window(w.yamaganda)}",
+            f"Gulikai: {format_window(w.gulikai)}",
+            "Good windows (avoid the above): " + ", ".join(format_window(b) for b in w.best_windows[:3]) + (" …" if len(w.best_windows) > 3 else "")
+        ]
+        panchangam_context = "\n".join(ctx_lines)
+
+        # Prompt the LLM with real timings
+        prompt = (
+            "You are a concise, practical Vedic astrology guide. "
+            "Use the provided Panchangam timings exactly—do not invent times.\n\n"
+            f"PANCHANGAM TODAY (local):\n{panchangam_context}\n\n"
+            f"USER QUESTION:\n{q}\n\n"
+            "Answer in 3-5 bullet points max. If the user asks for an auspicious time, "
+            "recommend a BEST WINDOW that does not overlap Rahu, Yamaganda, or Gulikai, "
+            "and mention one practical action."
+        )
+
+        ans = llm.ask_one_shot(prompt)
+        if not ans:
+            return {"answer": "I couldn't generate a reply.", "error": "empty_completion"}
+        return {"answer": ans}
+    except Exception as e:
+        logger.error(f"Error in ask_astrooverz: {e}")
+        return {"answer": f"Sorry, I encountered an error: {str(e)}"}
+
+@app.get("/diag/panchangam")
+def diag_panchangam(lat: float = 13.0827, lon: float = 80.2707, tz: str = "Asia/Kolkata"):
+    """Diagnostic endpoint to verify Panchangam calculations."""
+    try:
+        w = compute_windows(date.today(), lat=lat, lon=lon, tz=tz)
+        return {
+            "sunrise": w.sunrise.isoformat(),
+            "sunset": w.sunset.isoformat(),
+            "rahu": format_window(w.rahu),
+            "yamaganda": format_window(w.yamaganda),
+            "gulikai": format_window(w.gulikai),
+            "best_windows": [format_window(b) for b in w.best_windows],
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/api/analyze_name")
 def analyze_name_endpoint(payload: NameIn):

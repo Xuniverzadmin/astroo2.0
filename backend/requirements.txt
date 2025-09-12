@@ -27,7 +27,7 @@ orjson>=3.10,<4
 
 # --- Third-party SDKs / libs ---
 openai
-astral==3.2
+astral==2.2
 pytz
 python-dateutil==2.9.0
 ics
