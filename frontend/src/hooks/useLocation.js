@@ -1,166 +1,80 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useState } from "react";
 
-/**
- * Custom hook for handling geolocation and manual location override
- * Provides current location, loading state, and error handling
- */
-export const useLocation = () => {
-  const [location, setLocation] = useState({
-    latitude: null,
-    longitude: null,
-    timezone: 'Asia/Kolkata',
-    city: '',
-    country: ''
+// Default fallback (Chennai)
+const DEFAULT_LOC = { lat: 13.0827, lon: 80.2707, label: "Chennai, India" };
+const LS_KEY = "astrooverz_location";
+
+export function useLocation() {
+  const [location, setLocation] = useState(() => {
+    const saved = localStorage.getItem(LS_KEY);
+    return saved ? JSON.parse(saved) : DEFAULT_LOC;
   });
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [permissionDenied, setPermissionDenied] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Get current position using browser geolocation
-  const getCurrentPosition = useCallback(() => {
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by this browser');
-      return;
-    }
+  useEffect(() => {
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) { setLoading(false); return; } // user preference overrides auto-detect
 
-    setLoading(true);
-    setError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          
-          // Get timezone and location details using reverse geocoding
-          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-          
-          // Try to get city name from reverse geocoding
-          let city = '';
-          let country = '';
-          
-          try {
-            const response = await fetch(
-              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
-            );
-            if (response.ok) {
-              const data = await response.json();
-              city = data.city || data.locality || '';
-              country = data.countryName || '';
+    async function detect() {
+      try {
+        if ("geolocation" in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              setLocation({
+                lat: pos.coords.latitude,
+                lon: pos.coords.longitude,
+                label: "My Current Location",
+              });
+              setLoading(false);
+            },
+            async () => {
+              try {
+                const res = await fetch("https://ipapi.co/json/");
+                const data = await res.json();
+                setLocation({
+                  lat: data.latitude,
+                  lon: data.longitude,
+                  label: data.city ? `${data.city}, ${data.country_name}` : "Detected Location",
+                });
+              } catch {
+                setLocation(DEFAULT_LOC);
+              } finally { setLoading(false); }
             }
-          } catch (geocodeError) {
-            console.warn('Reverse geocoding failed:', geocodeError);
-          }
-
+          );
+        } else {
+          const res = await fetch("https://ipapi.co/json/");
+          const data = await res.json();
           setLocation({
-            latitude,
-            longitude,
-            timezone,
-            city,
-            country
+            lat: data.latitude,
+            lon: data.longitude,
+            label: data.city ? `${data.city}, ${data.country_name}` : "Detected Location",
           });
-          
-          // Store in localStorage for future use
-          localStorage.setItem('astrooverz_location', JSON.stringify({
-            latitude,
-            longitude,
-            timezone,
-            city,
-            country
-          }));
-          
-        } catch (err) {
-          setError('Failed to get location details');
-        } finally {
           setLoading(false);
         }
-      },
-      (error) => {
+      } catch {
+        setLocation(DEFAULT_LOC);
         setLoading(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setError('Location access denied by user');
-            setPermissionDenied(true);
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setError('Location information is unavailable');
-            break;
-          case error.TIMEOUT:
-            setError('Location request timed out');
-            break;
-          default:
-            setError('An unknown error occurred while retrieving location');
-            break;
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes
-      }
-    );
-  }, []);
-
-  // Set location manually
-  const setManualLocation = useCallback((lat, lon, tz = 'Asia/Kolkata', city = '', country = '') => {
-    const newLocation = {
-      latitude: parseFloat(lat),
-      longitude: parseFloat(lon),
-      timezone: tz,
-      city,
-      country
-    };
-    
-    setLocation(newLocation);
-    setError(null);
-    
-    // Store in localStorage
-    localStorage.setItem('astrooverz_location', JSON.stringify(newLocation));
-  }, []);
-
-  // Clear location
-  const clearLocation = useCallback(() => {
-    setLocation({
-      latitude: null,
-      longitude: null,
-      timezone: 'Asia/Kolkata',
-      city: '',
-      country: ''
-    });
-    setError(null);
-    setPermissionDenied(false);
-    localStorage.removeItem('astrooverz_location');
-  }, []);
-
-  // Load saved location on mount
-  useEffect(() => {
-    const savedLocation = localStorage.getItem('astrooverz_location');
-    if (savedLocation) {
-      try {
-        const parsed = JSON.parse(savedLocation);
-        setLocation(parsed);
-      } catch (err) {
-        console.warn('Failed to parse saved location:', err);
-        localStorage.removeItem('astrooverz_location');
       }
     }
+
+    detect();
   }, []);
 
-  // Auto-request location if not available and permission not denied
-  useEffect(() => {
-    if (!location.latitude && !permissionDenied && !loading) {
-      getCurrentPosition();
-    }
-  }, [location.latitude, permissionDenied, loading, getCurrentPosition]);
+  function setPreference(newLoc) {
+    setLocation(newLoc);
+    localStorage.setItem(LS_KEY, JSON.stringify(newLoc));
+  }
+
+  function clearPreference() {
+    localStorage.removeItem(LS_KEY);
+    setLocation(DEFAULT_LOC);
+  }
 
   return {
     location,
+    setPreference,
+    clearPreference,
     loading,
-    error,
-    permissionDenied,
-    getCurrentPosition,
-    setManualLocation,
-    clearLocation,
-    hasLocation: location.latitude !== null && location.longitude !== null
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata",
   };
-};
+}

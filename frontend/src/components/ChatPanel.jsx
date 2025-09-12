@@ -1,10 +1,11 @@
 // frontend/src/components/ChatPanel.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, MicOff, Settings, User, Moon, Sun, X } from 'lucide-react';
+import { Send, Mic, MicOff, Settings, User, Moon, Sun, X, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { useLocation } from '../hooks/useLocation';
 
 import QuickActions from './QuickActions';
 import AuthModal from './AuthModal';
@@ -14,15 +15,17 @@ import ChartWidget from './ChartWidget';
 import DashaWidget from './DashaWidget';
 import RemindersWidget from './RemindersWidget';
 import ProfileForm from './ProfileForm';
+import LocationPicker from './LocationPicker';
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://api.astrooverz.com";
 
 export default function ChatPanel() {
   const { t } = useTranslation();
   const { isAuthenticated, currentProfile } = useAuth();
+  const { location, setPreference, clearPreference, loading: locLoading, timezone } = useLocation();
   
   const [messages, setMessages] = useState([
-    { role: "assistant", content: "Namaste! I'm your Vedic astrology guide. How can I help you today?" }
+    { role: "assistant", content: "Namaste! I can guide you using today's Panchangam. Ask me anything!" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,7 +59,12 @@ export default function ChatPanel() {
       const res = await fetch(`${API_BASE}/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: text })
+        body: JSON.stringify({
+          question: text,
+          lat: location.lat,
+          lon: location.lon,
+          tz: timezone
+        })
       });
       if (!res.ok) throw new Error(await res.text());
       const data = await res.json();              // { answer: string }
@@ -154,6 +162,32 @@ export default function ChatPanel() {
               Sign In
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Location bar */}
+      <div className="p-3 border-b border-slate-800 bg-slate-900/60 sticky top-0 z-10">
+        <div className="flex items-center gap-3">
+          <div className="text-sm">
+            <MapPin size={16} className="inline mr-1" />
+            <span className="opacity-80">Location:</span> {locLoading ? "Detecting…" : location.label}
+            <span className="opacity-60"> • TZ: {timezone}</span>
+          </div>
+          <button 
+            className="px-2 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600 transition-colors" 
+            onClick={clearPreference} 
+            title="Use auto-detected"
+          >
+            Reset to Auto
+          </button>
+        </div>
+        <div className="mt-2">
+          <LocationPicker
+            value={location}
+            onSelect={(loc) =>
+              setPreference({ lat: loc.lat, lon: loc.lon, label: loc.label })
+            }
+          />
         </div>
       </div>
 
