@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from datetime import date, datetime
 import logging
 import os
-from .panchangam import compute_windows, format_window
+from .panchangam_utils import compute_windows, format_window
 
 # --- Caching imports (with safe fallback for editors/local) ---
 try:
