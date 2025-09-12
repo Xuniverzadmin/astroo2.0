@@ -1,21 +1,21 @@
 // frontend/src/components/ChatPanel.jsx
+import { AnimatePresence, motion } from 'framer-motion';
+import { MapPin, Mic, MicOff, Moon, Send, Sun, User } from 'lucide-react';
 import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Mic, MicOff, Settings, User, Moon, Sun, X, MapPin } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/AuthContext';
 import { useLocation } from '../hooks/useLocation';
 
-import QuickActions from './QuickActions';
 import AuthModal from './AuthModal';
-import ProfileMenu from './ProfileMenu';
-import PanchangamWidgetStub from './PanchangamWidgetStub';
 import ChartWidget from './ChartWidget';
 import DashaWidget from './DashaWidget';
-import RemindersWidget from './RemindersWidget';
-import ProfileForm from './ProfileForm';
 import LocationPicker from './LocationPicker';
+import PanchangamWidgetStub from './PanchangamWidgetStub';
+import ProfileForm from './ProfileForm';
+import ProfileMenu from './ProfileMenu';
+import QuickActions from './QuickActions';
+import RemindersWidget from './RemindersWidget';
 
 const API_BASE = import.meta.env.VITE_API_URL || "https://api.astrooverz.com";
 
@@ -23,7 +23,7 @@ export default function ChatPanel() {
   const { t } = useTranslation();
   const { isAuthenticated, currentProfile } = useAuth();
   const { location, setPreference, clearPreference, loading: locLoading, timezone } = useLocation();
-  
+
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Namaste! I can guide you using today's Panchangam. Ask me anything!" }
   ]);
@@ -37,8 +37,8 @@ export default function ChatPanel() {
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
-  useEffect(() => { 
-    endRef.current?.scrollIntoView({ behavior: "smooth" }); 
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
   useEffect(() => {
@@ -104,6 +104,26 @@ export default function ChatPanel() {
     setActiveWidgets(prev => ({ ...prev, [widgetType]: data }));
   };
 
+  const handleQuickAction = (query) => {
+    // Map QuickActions queries to widget types
+    if (query.includes("Panchangam")) {
+      openWidget('panchangam', { date: new Date().toISOString().split('T')[0] });
+    } else if (query.includes("birth chart")) {
+      openWidget('chart', {});
+    } else if (query.includes("Dasha")) {
+      openWidget('dasha', {});
+    } else if (query.includes("reminders")) {
+      openWidget('reminders', {});
+    } else if (query.includes("profile")) {
+      openWidget('profile', {});
+    } else if (query.includes("reading")) {
+      openWidget('reading', {});
+    } else {
+      // For error messages or other queries, just send as a message
+      setInput(query);
+    }
+  };
+
   const closeWidget = (widgetType) => {
     setActiveWidgets(prev => {
       const newWidgets = { ...prev };
@@ -142,7 +162,7 @@ export default function ChatPanel() {
             <p className="text-gray-400">Your Vedic astrology companion</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
@@ -150,7 +170,7 @@ export default function ChatPanel() {
           >
             {isDarkMode ? <Sun size={20} className="text-gray-400" /> : <Moon size={20} className="text-gray-400" />}
           </button>
-          
+
           {isAuthenticated ? (
             <ProfileMenu />
           ) : (
@@ -173,9 +193,9 @@ export default function ChatPanel() {
             <span className="opacity-80">Location:</span> {locLoading ? "Detecting…" : location.label}
             <span className="opacity-60"> • TZ: {timezone}</span>
           </div>
-          <button 
-            className="px-2 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600 transition-colors" 
-            onClick={clearPreference} 
+          <button
+            className="px-2 py-1 text-xs bg-slate-700 text-white rounded hover:bg-slate-600 transition-colors"
+            onClick={clearPreference}
             title="Use auto-detected"
           >
             Reset to Auto
@@ -193,7 +213,7 @@ export default function ChatPanel() {
 
       {/* Quick Actions */}
       <div className="p-4 border-b border-slate-700">
-        <QuickActions onAction={openWidget} />
+        <QuickActions onQuick={handleQuickAction} />
       </div>
 
       {/* Chat Messages */}
@@ -203,11 +223,10 @@ export default function ChatPanel() {
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`max-w-xl rounded-2xl px-4 py-3 ${
-              m.role === "assistant" 
-                ? "bg-slate-800/60 text-slate-50 self-start" 
+            className={`max-w-xl rounded-2xl px-4 py-3 ${m.role === "assistant"
+                ? "bg-slate-800/60 text-slate-50 self-start"
                 : "bg-indigo-600 text-white self-end ml-auto"
-            }`}
+              }`}
           >
             {m.content}
           </motion.div>
@@ -247,18 +266,17 @@ export default function ChatPanel() {
             />
             <button
               onClick={handleVoiceToggle}
-              className={`absolute right-2 top-2 p-2 rounded-lg transition-colors ${
-                isRecording 
-                  ? 'bg-red-600 hover:bg-red-700' 
+              className={`absolute right-2 top-2 p-2 rounded-lg transition-colors ${isRecording
+                  ? 'bg-red-600 hover:bg-red-700'
                   : 'bg-slate-700 hover:bg-slate-600'
-              }`}
+                }`}
             >
               {isRecording ? <MicOff size={16} className="text-white" /> : <Mic size={16} className="text-white" />}
             </button>
           </div>
-          <button 
+          <button
             className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            disabled={loading || !input.trim()} 
+            disabled={loading || !input.trim()}
             onClick={sendMessage}
           >
             {loading ? "Sending…" : "Send"}

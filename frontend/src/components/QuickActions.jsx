@@ -1,13 +1,18 @@
 // frontend/src/components/QuickActions.jsx
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, User, Clock, Bell, Plus, Sparkles } from 'lucide-react';
+import { Bell, Calendar, Clock, Plus, Sparkles, User } from 'lucide-react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 
 const QuickActions = ({ onQuick }) => {
   const { t } = useTranslation();
   const { isAuthenticated, currentProfile } = useAuth();
+
+  // Debug logging
+  console.log("QuickActions props:", { onQuick });
+  console.log("QuickActions auth state:", { isAuthenticated, currentProfile });
+  console.log("QuickActions onQuick function type:", typeof onQuick);
 
   const quickActions = [
     {
@@ -61,21 +66,28 @@ const QuickActions = ({ onQuick }) => {
   ];
 
   const handleQuickAction = (action) => {
+    console.log("handleQuickAction called with:", action);
+    console.log("onQuick function:", onQuick);
+
     if (!isAuthenticated) {
+      console.log("User not authenticated, showing sign in message");
       onQuick("Please sign in first to access this feature");
       return;
     }
-    
+
     if (action.id === 'chart' && !currentProfile) {
+      console.log("No profile for chart action");
       onQuick("Please add a profile first to view your birth chart");
       return;
     }
-    
+
     if (action.id === 'dasha' && !currentProfile) {
+      console.log("No profile for dasha action");
       onQuick("Please add a profile first to view your Dasha periods");
       return;
     }
-    
+
+    console.log("Calling onQuick with query:", action.query);
     onQuick(action.query);
   };
 
@@ -93,13 +105,13 @@ const QuickActions = ({ onQuick }) => {
           {t('common.click_to_explore') || 'Click to explore Vedic astrology features'}
         </p>
       </div>
-      
+
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {quickActions.map((action, index) => {
           const Icon = action.icon;
-          const isDisabled = !isAuthenticated || 
+          const isDisabled = !isAuthenticated ||
             (['chart', 'dasha'].includes(action.id) && !currentProfile);
-          
+
           return (
             <motion.button
               key={action.id}
@@ -110,36 +122,32 @@ const QuickActions = ({ onQuick }) => {
               whileTap={{ scale: 0.98 }}
               onClick={() => handleQuickAction(action)}
               disabled={isDisabled}
-              className={`group relative p-4 rounded-xl border-2 border-transparent transition-all duration-200 ${
-                isDisabled
+              className={`group relative p-4 rounded-xl border-2 border-transparent transition-all duration-200 ${isDisabled
                   ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-50'
                   : 'bg-white dark:bg-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-lg cursor-pointer'
-              }`}
+                }`}
             >
               <div className="flex flex-col items-center text-center">
-                <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${action.color} flex items-center justify-center mb-3 ${
-                  isDisabled ? 'opacity-50' : 'group-hover:scale-110 transition-transform duration-200'
-                }`}>
+                <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${action.color} flex items-center justify-center mb-3 ${isDisabled ? 'opacity-50' : 'group-hover:scale-110 transition-transform duration-200'
+                  }`}>
                   <Icon size={20} className="text-white" />
                 </div>
-                
-                <h4 className={`font-medium text-sm mb-1 ${
-                  isDisabled 
-                    ? 'text-gray-400 dark:text-gray-600' 
+
+                <h4 className={`font-medium text-sm mb-1 ${isDisabled
+                    ? 'text-gray-400 dark:text-gray-600'
                     : 'text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
-                }`}>
+                  }`}>
                   {action.label}
                 </h4>
-                
-                <p className={`text-xs leading-tight ${
-                  isDisabled 
-                    ? 'text-gray-400 dark:text-gray-600' 
+
+                <p className={`text-xs leading-tight ${isDisabled
+                    ? 'text-gray-400 dark:text-gray-600'
                     : 'text-gray-600 dark:text-gray-400'
-                }`}>
+                  }`}>
                   {action.description}
                 </p>
               </div>
-              
+
               {isDisabled && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1">
@@ -153,7 +161,7 @@ const QuickActions = ({ onQuick }) => {
           );
         })}
       </div>
-      
+
       {!isAuthenticated && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -165,7 +173,7 @@ const QuickActions = ({ onQuick }) => {
           </p>
         </motion.div>
       )}
-      
+
       {isAuthenticated && !currentProfile && (
         <motion.div
           initial={{ opacity: 0 }}
