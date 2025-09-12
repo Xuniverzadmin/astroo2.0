@@ -56,7 +56,7 @@ export default function ChatPanel() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/ask`, {
+      const res = await fetch(`${API_BASE}/api/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

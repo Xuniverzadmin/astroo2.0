@@ -13,7 +13,7 @@ export async function apiJSON(path, options = {}) {
 }
 
 export async function analyzeName(name) {
-  const res = await fetch(`${API_BASE}/analyze_name`, {
+  const res = await fetch(`${API_BASE}/api/analyze_name`, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ name })
@@ -23,13 +23,13 @@ export async function analyzeName(name) {
 }
 
 export async function analyzeNameGet(name) {
-  const res = await fetch(`${API_BASE}/analyze_name/${encodeURIComponent(name)}`);
+  const res = await fetch(`${API_BASE}/api/analyze_name/${encodeURIComponent(name)}`);
   if (!res.ok) throw new Error("API error");
   return res.json();
 }
 
 export async function checkHealth() {
-  const res = await fetch(`${API_BASE}/healthz`);
+  const res = await fetch(`${API_BASE}/api/healthz`);
   if (!res.ok) throw new Error("Health check failed");
   return res.json();
 }
@@ -42,14 +42,14 @@ export async function login(email, password) {
 }
 
 export async function getMiniReading(data) {
-  return apiJSON("/readings/mini", {
+  return apiJSON("/api/readings/mini", {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export async function askAstrooverz(question, profileId = null) {
-  return apiJSON("/ask", {
+  return apiJSON("/api/ask", {
     method: "POST",
     body: JSON.stringify({ question, profile_id: profileId }),
   });
