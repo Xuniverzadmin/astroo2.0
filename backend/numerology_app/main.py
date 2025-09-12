@@ -8,8 +8,8 @@ from .migrations.initial_schema import create_initial_schema
 from .jobs import initialize_jobs, cleanup_jobs
 from .config import settings
 
-# Import main API app
-from .api import app as api_app
+# Import main API router
+from .api import router as api_router
 from .api_chat import router as chat_router
 from .api_store import router as store_router
 from .api_astro import router as astro_router
@@ -73,19 +73,7 @@ async def on_shutdown() -> None:
 
 
 # Mount all API routers under /api
-# Include the main API app routes (contains /ask, /auth/login, /readings/mini endpoints)
-# We need to include the routes from api_app into our main app
-from fastapi import APIRouter
-api_router = APIRouter()
-
-# Copy the key routes from api.py that we need
-from .api import ask_astrooverz, login_user, mini_reading_endpoint, diag_panchangam
-
-api_router.post("/ask")(ask_astrooverz)
-api_router.post("/auth/login")(login_user) 
-api_router.post("/readings/mini")(mini_reading_endpoint)
-api_router.get("/diag/panchangam")(diag_panchangam)
-
+# Include the main API router (contains /ask, /auth/login, /readings/mini endpoints)
 app.include_router(api_router)
 
 # Mount all other API routers under /api

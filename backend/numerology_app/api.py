@@ -1,5 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query, Path, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, HTTPException, Query, Path, Request
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import date, datetime
@@ -64,47 +63,23 @@ class AskInput(BaseModel):
 class AskOutput(BaseModel):
     answer: str
 
-app = FastAPI(title="Astrooverz API", version="1.0.0")
+router = APIRouter()
 
-# Configure CORS with environment variable support
-origins_env = os.getenv("CORS_ORIGINS", "")
-origins = [o.strip() for o in origins_env.split(",") if o.strip()] or [
-    "http://localhost:5173",
-    "http://frontend",
-    "https://astrooverz.com",
-    "https://www.astrooverz.com"
-]
+# Router is ready - middleware will be handled in main.py
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Add 404 tracer middleware
-@app.middleware("http")
-async def log_404s(request: Request, call_next):
-    resp = await call_next(request)
-    if resp.status_code == 404:
-        logger.warning(f"404: {request.method} {request.url}")
-    return resp
-
-@app.get("/")
+@router.get("/")
 def root():
     return {"message": "Astrooverz Numerology API", "status": "running"}
 
-@app.get("/healthz")
+@router.get("/healthz")
 def healthz():
     return {"ok": True, "status": "healthy", "service": "numerology-api"}
 
-@app.get("/api/healthz")
+@router.get("/api/healthz")
 def api_healthz():
     return {"ok": True, "status": "healthy", "service": "numerology-api"}
 
-@app.post("/auth/login", response_model=LoginResponse)
+@router.post("/auth/login", response_model=LoginResponse)
 def login(req: LoginRequest):
     """Login endpoint for user authentication."""
     if not req.email or not req.password:
@@ -112,7 +87,7 @@ def login(req: LoginRequest):
     # TODO: replace with real auth
     return {"access_token": "demo-token", "token_type": "bearer"}
 
-@app.post("/readings/mini", response_model=MiniReadingOutput)
+@router.post("/readings/mini", response_model=MiniReadingOutput)
 @cache(expire=120)  # cache identical inputs for 2 minutes
 def mini_reading(payload: MiniReadingInput):
     """
@@ -131,7 +106,7 @@ def mini_reading(payload: MiniReadingInput):
     )
     return {"summary": text}
 
-@app.post("/ask", response_model=AskOutput)
+@router.post("/ask", response_model=AskOutput)
 @cache(expire=60)  # cache short-lived answers for 1 minute
 def ask_astrooverz(payload: AskInput):
     """
@@ -177,7 +152,7 @@ def ask_astrooverz(payload: AskInput):
         logger.error(f"Error in ask_astrooverz: {e}")
         return {"answer": f"Sorry, I encountered an error: {str(e)}"}
 
-@app.get("/diag/panchangam")
+@router.get("/diag/panchangam")
 def diag_panchangam(lat: float = 13.0827, lon: float = 80.2707, tz: str = "Asia/Kolkata"):
     """Diagnostic endpoint to verify Panchangam calculations."""
     try:
@@ -193,7 +168,7 @@ def diag_panchangam(lat: float = 13.0827, lon: float = 80.2707, tz: str = "Asia/
     except Exception as e:
         return {"error": str(e)}
 
-@app.post("/api/analyze_name")
+@router.post("/api/analyze_name")
 def analyze_name_endpoint(payload: NameIn):
     try:
         if not payload.name or not payload.name.strip():
@@ -206,7 +181,7 @@ def analyze_name_endpoint(payload: NameIn):
         logger.error(f"Error analyzing name '{payload.name}': {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error during name analysis")
 
-@app.get("/api/analyze_name/{name}")
+@router.get("/api/analyze_name/{name}")
 def analyze_name_get(name: str):
     try:
         if not name or not name.strip():
@@ -320,7 +295,7 @@ class PanchangamRequest(BaseModel):
     settings: Optional[Dict[str, Any]] = Field(default=None, description="Additional settings")
 
 
-@app.on_event("startup")
+@router.on_event("startup")
 async def _init_cache():
     """Initialize Redis cache on startup with safe fallback."""
     if _CACHE_OK:
@@ -337,7 +312,7 @@ async def _init_cache():
 
 
 # Panchangam Routes - Friendly API endpoints (ordered from most specific to least specific)
-@app.get("/api/panchangam/today")
+@router.get("/api/panchangam/today")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_panchangam_today(
     lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
@@ -364,7 +339,7 @@ async def get_panchangam_today(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/panchangam/{date}")
+@router.get("/api/panchangam/{date}")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_panchangam_by_date(
     date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
@@ -404,7 +379,7 @@ async def get_panchangam_by_date(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/api/calendar/{year}/{month}")
+@router.get("/api/calendar/{year}/{month}")
 @cache(expire=7200)  # Cache for 2 hours
 async def get_calendar_month(
     year: int = Path(..., ge=1900, le=2100, description="Year"),
@@ -452,7 +427,7 @@ async def get_calendar_month(
         raise HTTPException(status_code=500, detail="Internal server error during calendar generation")
 
 
-@app.get("/api/festivals")
+@router.get("/api/festivals")
 @cache(expire=86400)  # Cache for 24 hours
 async def get_festivals(
     year: int = Query(..., ge=1900, le=2100, description="Year"),
@@ -505,7 +480,7 @@ async def get_festivals(
         raise HTTPException(status_code=500, detail="Internal server error during festival retrieval")
 
 
-@app.get("/api/muhurtham")
+@router.get("/api/muhurtham")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_muhurtham(
     date: date = Query(..., description="Date for muhurtham calculation (YYYY-MM-DD)"),
