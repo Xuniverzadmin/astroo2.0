@@ -28,10 +28,22 @@ from .api_interpretation import router as interpretation_router
 
 app = FastAPI(title="Astrooverz API")
 
-# Add CORS middleware
+# Add CORS middleware with robust configuration
+import os
+origins_env = os.getenv("CORS_ORIGINS", "")
+cors_origins = [o.strip() for o in origins_env.split(",") if o.strip()] if origins_env else settings.BACKEND_CORS_ORIGINS
+
+# Fallback to default origins if none configured
+if not cors_origins:
+    cors_origins = [
+        "https://astrooverz.com",
+        "https://www.astrooverz.com", 
+        "http://localhost:5173"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
