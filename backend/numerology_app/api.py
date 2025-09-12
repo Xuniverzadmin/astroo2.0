@@ -288,7 +288,7 @@ class PanchangamResponse(BaseModel):
 
 class PanchangamRequest(BaseModel):
     """Panchangam calculation request."""
-    date: date = Field(..., description="Date for panchangam calculation")
+    target_date: date = Field(..., description="Date for panchangam calculation")
     latitude: float = Field(..., ge=-90, le=90, description="Latitude in degrees")
     longitude: float = Field(..., ge=-180, le=180, description="Longitude in degrees")
     timezone: str = Field(default="Asia/Kolkata", description="Timezone string")
