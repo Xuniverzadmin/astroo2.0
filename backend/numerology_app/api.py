@@ -25,6 +25,7 @@ from .core_utils import analyze_name
 from .panchangam.core import assemble_panchangam
 from .festivals.service import festival_service
 from .config import settings
+from .llm import ask_one_shot
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -73,10 +74,6 @@ def root():
 
 @router.get("/healthz")
 def healthz():
-    return {"ok": True, "status": "healthy", "service": "numerology-api"}
-
-@router.get("/api/healthz")
-def api_healthz():
     return {"ok": True, "status": "healthy", "service": "numerology-api"}
 
 @router.post("/auth/login", response_model=LoginResponse)
@@ -144,7 +141,7 @@ def ask_astrooverz(payload: AskInput):
             "and mention one practical action."
         )
 
-        ans = llm.ask_one_shot(prompt)
+        ans = ask_one_shot(prompt)
         if not ans:
             return {"answer": "I couldn't generate a reply.", "error": "empty_completion"}
         return {"answer": ans}
@@ -168,7 +165,7 @@ def diag_panchangam(lat: float = 13.0827, lon: float = 80.2707, tz: str = "Asia/
     except Exception as e:
         return {"error": str(e)}
 
-@router.post("/api/analyze_name")
+@router.post("/analyze_name")
 def analyze_name_endpoint(payload: NameIn):
     try:
         if not payload.name or not payload.name.strip():
@@ -181,7 +178,7 @@ def analyze_name_endpoint(payload: NameIn):
         logger.error(f"Error analyzing name '{payload.name}': {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error during name analysis")
 
-@router.get("/api/analyze_name/{name}")
+@router.get("/analyze_name/{name}")
 def analyze_name_get(name: str):
     try:
         if not name or not name.strip():
@@ -312,7 +309,7 @@ async def _init_cache():
 
 
 # Panchangam Routes - Friendly API endpoints (ordered from most specific to least specific)
-@router.get("/api/panchangam/today")
+@router.get("/panchangam/today")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_panchangam_today(
     lat: float = Query(13.0827, ge=-90, le=90, description="Latitude in degrees"),
@@ -339,7 +336,7 @@ async def get_panchangam_today(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/panchangam/{date}")
+@router.get("/panchangam/{date}")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_panchangam_by_date(
     date: date = Path(..., description="Date for panchangam calculation (YYYY-MM-DD)"),
@@ -379,7 +376,7 @@ async def get_panchangam_by_date(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/calendar/{year}/{month}")
+@router.get("/calendar/{year}/{month}")
 @cache(expire=7200)  # Cache for 2 hours
 async def get_calendar_month(
     year: int = Path(..., ge=1900, le=2100, description="Year"),
@@ -427,7 +424,7 @@ async def get_calendar_month(
         raise HTTPException(status_code=500, detail="Internal server error during calendar generation")
 
 
-@router.get("/api/festivals")
+@router.get("/festivals")
 @cache(expire=86400)  # Cache for 24 hours
 async def get_festivals(
     year: int = Query(..., ge=1900, le=2100, description="Year"),
@@ -480,7 +477,7 @@ async def get_festivals(
         raise HTTPException(status_code=500, detail="Internal server error during festival retrieval")
 
 
-@router.get("/api/muhurtham")
+@router.get("/muhurtham")
 @cache(expire=3600)  # Cache for 1 hour
 async def get_muhurtham(
     date: date = Query(..., description="Date for muhurtham calculation (YYYY-MM-DD)"),

@@ -6,7 +6,7 @@ astrooverz.com, www.astrooverz.com {
   encode zstd gzip
 
   # API routes - proxy to FastAPI backend
-  handle_path /api/* {
+  handle /api/* {
     reverse_proxy backend:8000 {
       health_uri /healthz
       health_interval 30s
@@ -41,7 +41,7 @@ localhost, 127.0.0.1 {
   encode zstd gzip
 
   # API routes - proxy to FastAPI backend
-  handle_path /api/* {
+  handle /api/* {
     reverse_proxy backend:8000 {
       health_uri /healthz
       health_interval 30s
@@ -68,7 +68,7 @@ localhost, 127.0.0.1 {
   encode zstd gzip
 
   # API routes - proxy to FastAPI backend
-  handle_path /api/* {
+  handle /api/* {
     reverse_proxy backend:8000 {
       health_uri /healthz
       health_interval 30s
