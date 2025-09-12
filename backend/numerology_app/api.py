@@ -21,7 +21,7 @@ except Exception:
             return fn
         return _wrap
 
-from .core import analyze_name
+from .core_utils import analyze_name
 from .panchangam.core import assemble_panchangam
 from .festivals.service import festival_service
 from .config import settings

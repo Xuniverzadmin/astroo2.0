@@ -1,1 +1,1 @@
-﻿from ..core import analyze_name
+﻿
