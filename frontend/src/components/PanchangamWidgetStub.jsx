@@ -1,7 +1,7 @@
 // Real PanchangamWidget that calls the backend API
-import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, X, Loader2, MapPin, Clock, Sun, Moon } from 'lucide-react';
+import { Calendar, Clock, Loader2, MapPin, Moon, Sun, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { apiJSON } from '../api';
 
 export default function PanchangamWidgetStub({ data, onClose }) {
@@ -17,16 +17,20 @@ export default function PanchangamWidgetStub({ data, onClose }) {
     try {
       setLoading(true);
       setError(null);
-      
+
       // Use today's date or the date from data prop
       const date = data?.date || new Date().toISOString().split('T')[0];
-      
+
       // Default to Chennai coordinates if not provided
       const lat = data?.lat || 13.0827;
       const lon = data?.lon || 80.2707;
       const tz = data?.tz || 'Asia/Kolkata';
-      
+
       const result = await apiJSON(`/api/panchangam/${date}?lat=${lat}&lon=${lon}&tz=${tz}`);
+      console.log('Panchangam API response:', result);
+      console.log('Rahu Kalam type:', typeof result.rahu_kalam, result.rahu_kalam);
+      console.log('Yama Gandam type:', typeof result.yama_gandam, result.yama_gandam);
+      console.log('Gulikai Kalam type:', typeof result.gulikai_kalam, result.gulikai_kalam);
       setPanchangamData(result);
     } catch (err) {
       console.error('Error fetching panchangam data:', err);
@@ -154,15 +158,45 @@ export default function PanchangamWidgetStub({ data, onClose }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="text-center">
                     <p className="text-red-400 font-medium">Rahu Kalam</p>
-                    <p className="text-gray-300 text-sm">{panchangamData.rahu_kalam || 'N/A'}</p>
+                    <p className="text-gray-300 text-sm">
+                      {(() => {
+                        const rahu = panchangamData.rahu_kalam;
+                        if (!rahu) return 'N/A';
+                        if (typeof rahu === 'string') return rahu;
+                        if (typeof rahu === 'object' && rahu.start && rahu.end) {
+                          return `${rahu.start} - ${rahu.end}`;
+                        }
+                        return JSON.stringify(rahu);
+                      })()}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-yellow-400 font-medium">Yama Gandam</p>
-                    <p className="text-gray-300 text-sm">{panchangamData.yama_gandam || 'N/A'}</p>
+                    <p className="text-gray-300 text-sm">
+                      {(() => {
+                        const yama = panchangamData.yama_gandam;
+                        if (!yama) return 'N/A';
+                        if (typeof yama === 'string') return yama;
+                        if (typeof yama === 'object' && yama.start && yama.end) {
+                          return `${yama.start} - ${yama.end}`;
+                        }
+                        return JSON.stringify(yama);
+                      })()}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-orange-400 font-medium">Gulikai Kalam</p>
-                    <p className="text-gray-300 text-sm">{panchangamData.gulikai_kalam || 'N/A'}</p>
+                    <p className="text-gray-300 text-sm">
+                      {(() => {
+                        const gulikai = panchangamData.gulikai_kalam;
+                        if (!gulikai) return 'N/A';
+                        if (typeof gulikai === 'string') return gulikai;
+                        if (typeof gulikai === 'object' && gulikai.start && gulikai.end) {
+                          return `${gulikai.start} - ${gulikai.end}`;
+                        }
+                        return JSON.stringify(gulikai);
+                      })()}
+                    </p>
                   </div>
                 </div>
               </div>
