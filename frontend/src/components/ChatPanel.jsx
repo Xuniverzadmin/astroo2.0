@@ -117,7 +117,8 @@ export default function ChatPanel() {
       openWidget('panchangam', { date: new Date().toISOString().split('T')[0] });
     } else if (query.includes("birth chart")) {
       console.log('Opening birth chart widget');
-      openWidget('birthchart', {});
+      console.log('Current profile:', currentProfile);
+      openWidget('birthchart', { profile: currentProfile });
     } else if (query.includes("Dasha")) {
       console.log('Opening dasha widget');
       openWidget('dasha', {});
