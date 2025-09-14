@@ -1,0 +1,118 @@
+### AstroOverz API Testing - REST Client
+### Use this file with the REST Client extension in VS Code/Cursor
+
+### Variables
+@baseUrl = http://localhost:8000
+@apiUrl = https://api.astrooverz.com
+@date = 2025-01-15
+@location = Chennai
+
+### Health Check
+GET {{baseUrl}}/health
+Content-Type: application/json
+
+###
+
+### Panchangam API - Today's Panchangam
+GET {{baseUrl}}/api/panchangam?date={{date}}&location={{location}}
+Content-Type: application/json
+
+###
+
+### Panchangam API - Specific Date
+GET {{baseUrl}}/api/panchangam?date=2025-01-15&location=Mumbai
+Content-Type: application/json
+
+###
+
+### Panchangam API - Current Date (no date param)
+GET {{baseUrl}}/api/panchangam?location=Delhi
+Content-Type: application/json
+
+###
+
+### Birth Chart API
+POST {{baseUrl}}/api/birth-chart
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "dob": "1990-01-15",
+  "tob": "10:30",
+  "location": "Chennai, India",
+  "latitude": 13.0827,
+  "longitude": 80.2707
+}
+
+###
+
+### Quick Reading API
+POST {{baseUrl}}/api/quick-reading
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "dob": "1990-01-15",
+  "tob": "10:30",
+  "location": "Chennai, India"
+}
+
+###
+
+### Name Analysis API
+POST {{baseUrl}}/api/name-analysis
+Content-Type: application/json
+
+{
+  "name": "Test User"
+}
+
+###
+
+### Dasha API
+POST {{baseUrl}}/api/dasha
+Content-Type: application/json
+
+{
+  "dob": "1990-01-15",
+  "tob": "10:30",
+  "location": "Chennai, India"
+}
+
+###
+
+### Login API
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "testpassword"
+}
+
+###
+
+### Register API
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "testpassword",
+  "name": "Test User"
+}
+
+###
+
+### Test Production API
+GET {{apiUrl}}/health
+Content-Type: application/json
+
+###
+
+### Test Production Panchangam
+GET {{apiUrl}}/api/panchangam?date={{date}}&location={{location}}
+Content-Type: application/json
+
+###
+
